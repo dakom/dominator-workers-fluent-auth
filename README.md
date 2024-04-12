@@ -29,9 +29,9 @@ In the meantime - this is more of a cutoff point that can be cloned and used as 
 * Sensible responsive design and theming setup
     * dominator signals are used in certain root stylesheet properties and reusable classes
 * Best-practices auth system
-    * argon2 clientside
-    * csrf protection
-    * xss protection
+    * openid support (google, facebook, etc.)
+    * email/password support (clientside argon2 hash)
+    * csrf & xss protection
     * logout everywhere capability
 * Self-cleaning backend tokens
     * using durable object alarms

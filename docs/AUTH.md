@@ -7,6 +7,8 @@ A successful *complete* authentication session requires:
 3. UserToken (to support "sign out everywhere", not sent)
 4. Validated email address
 
+These are retrieved by going through the auth flow, either openid or email+pw
+
 UserToken (database field)
 - created on registration
 - never cleaned up (unless user is completely deleted from system)
