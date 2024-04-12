@@ -1,0 +1,23 @@
+name = "api"
+main = "build/worker/shim.mjs"
+compatibility_date = "2023-12-01"
+
+[env.prod]
+build = { command = "worker-build --release" }
+d1_databases = [{ binding = "DB_PROD", database_name = "example-prod", database_id = "EXAMPLE-ID", migrations_dir = "../../db/migrations/prod" }]
+durable_objects.bindings = [
+    { name = "AUTH_TOKEN_PROD", class_name = "AuthTokenDO" },
+    { name = "AUTH_OPENID_SESSION_PROD", class_name = "OpenIdSessionDO" },
+]
+
+[env.dev]
+build = { command = "worker-build --dev" }
+d1_databases = [{ binding = "DB_DEV", database_name = "example-dev", database_id = "EXAMPLE-ID", migrations_dir = "../../db/migrations/dev" }]
+durable_objects.bindings = [
+    { name = "AUTH_TOKEN_DEV", class_name = "AuthTokenDO" },
+    { name = "AUTH_OPENID_SESSION_DEV", class_name = "OpenIdSessionDO" },
+]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["AuthTokenDO", "OpenIdSessionDO"]

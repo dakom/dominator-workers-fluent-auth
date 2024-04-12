@@ -1,0 +1,9 @@
+{
+  "name": "demo",
+  "version": "1.0.0",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "wrangler": "^3.34.2"
+  }
+}

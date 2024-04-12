@@ -1,0 +1,118 @@
+# local dev: "task dev"
+# build/deploy: "task deploy"
+
+version: '3'
+
+vars:
+  # relative to worker path
+  DB_DIR: ../../db/local
+  # relative to root path
+  MEDIA_DIR: ./media
+
+tasks:
+  dev:
+    deps: [localmedia-dev, frontend-dev, api-dev]
+
+  frontend-dev:
+    dir: ./frontend
+    env: 
+      RUSTFLAGS: --cfg=web_sys_unstable_apis 
+    cmds:
+      - trunk serve --features dev --watch . --watch ../shared
+
+  localmedia-dev:
+    dir: "{{.MEDIA_DIR}}"
+    cmds: 
+      - http-server -g -b --cors -p 9000
+
+  api-dev:
+    dir: ./workers/api 
+    cmds: 
+      - npx wrangler dev --env dev --persist-to="{{.DB_DIR}}"
+
+  # mostly just for checking final binary size
+  api-build-dry-run:
+    dir: ./workers/api 
+    cmds: 
+      - npx wrangler deploy --env prod --dry-run 
+
+  # deploy
+  deploy:
+    deps: [frontend-deploy, api-deploy]
+
+  frontend-deploy:
+    deps: [frontend-build]
+    dir: ./frontend
+    cmds:
+      # note this does *not* use wrangler.toml
+      - npx wrangler pages deploy ./dist
+
+  api-deploy:
+    dir: ./workers/api
+    cmds:
+      # also builds
+      - npx wrangler deploy --env prod
+
+  # build
+  frontend-build:
+    dir: ./frontend
+    env: 
+      RUSTFLAGS: --cfg=web_sys_unstable_apis 
+    cmds:
+      - trunk build --release
+      - task: frontend-copy-media 
+
+  frontend-copy-media:
+    cmds:
+      - cp -r "{{.MEDIA_DIR}}" ./frontend/dist/media
+
+  # database - runs in workers/api space
+  # call like: task db-migrations-create-dev NAME=my-migration-name (e.g. init, add-users, etc.)
+  db-migrations-create-dev:
+    dir: ./workers/api
+    cmds:
+      - npx wrangler d1 migrations create example-dev {{.NAME}} --env=dev
+
+  db-migrations-create-prod:
+    dir: ./workers/api
+    cmds:
+      - npx wrangler d1 migrations create example-prod {{.NAME}} --env=prod
+
+  db-migrations-list-dev:
+    dir: ./workers/api
+    cmds:
+      - npx wrangler d1 migrations list example-dev --env=dev
+
+  db-migrations-list-prod:
+    dir: ./workers/api
+    cmds:
+      - npx wrangler d1 migrations list example-prod --env=prod
+
+  db-migrations-apply-local-dev:
+    dir: ./workers/api
+    cmds:
+      - npx wrangler d1 migrations apply example-dev --local=true --remote=false --env=dev --persist-to="{{.DB_DIR}}"
+
+  db-migrations-apply-local-prod:
+    dir: ./workers/api
+    cmds:
+      - npx wrangler d1 migrations apply example-prod --local=true --remote=false --env=prod --persist-to="{{.DB_DIR}}"
+
+  db-migrations-apply-remote-dev:
+    dir: ./workers/api
+    cmds:
+      - npx wrangler d1 migrations apply example-dev --local=false --remote=true --env=dev
+
+  db-migrations-apply-remote-prod:
+    dir: ./workers/api
+    cmds:
+      - npx wrangler d1 migrations apply example-prod --local=false --remote=true --env=prod
+
+  # helper utils
+
+  # run any wrangler command in worker dir
+  # for example: task wrangler-api -- d1 create example-dev --location=weur --env=dev
+  wrangler-api:
+    dir: ./workers/api
+    cmds:
+      - npx wrangler {{.CLI_ARGS}}

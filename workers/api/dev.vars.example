@@ -1,0 +1,10 @@
+# https://developers.google.com/identity/openid-connect/openid-connect#getcredentials
+OAUTH_GOOGLE_CLIENT_ID=EXAMPLE
+OAUTH_GOOGLE_CLIENT_SECRET=EXAMPLE
+
+# https://developers.facebook.com/docs/facebook-login/guides/advanced/oidc-token/
+OAUTH_FACEBOOK_CLIENT_ID=EXAMPLE
+OAUTH_FACEBOOK_CLIENT_SECRET=EXAMPLE
+
+# https://developers.cloudflare.com/pages/functions/plugins/mailchannels/#:~:text=The%20MailChannels%20API%20also%20allows,signature%20using%20public%2Dkey%20cryptography.
+DKIM_PRIVATE_KEY=EXAMPLE

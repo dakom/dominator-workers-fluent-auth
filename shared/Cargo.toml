@@ -1,0 +1,28 @@
+[package]
+name = "shared"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = "1.0.197"
+thiserror = "1.0.58"
+uuid = { version = "1.8.0", features = ["serde", "js"]}
+wasm-bindgen = "0.2.92"
+# worker = { path="../local-fork/workers-rs/worker", features = ["d1"], optional = true }
+worker = { version = "0.1.0", features = ["d1"], optional = true }
+serde_json = { version = "1.0.114", optional = true }
+
+[features]
+default = []
+worker = ["dep:worker", "dep:serde_json"]
+
+[dependencies.web-sys]
+version = "0.3.69"
+features = [
+    "Request",
+    "RequestInit",
+    "Response",
+    "ResponseInit",
+    "Url",
+    "Headers"
+]
