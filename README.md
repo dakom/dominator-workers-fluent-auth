@@ -55,6 +55,8 @@ In the meantime - this is more of a cutoff point that can be cloned and used as 
 
 Some ideas:
 
-* Add new workers, call them from `api`
+* Add new workers (show sub-calls)
+* Move durable object calls from http to rpc
 * Have api use fluent for emails too (easy enough, just didn't get around to it)
+* Figure out why `cargo doc/check` isn't working from locally inside `shared`, find a way to generate API docs
 * Build something awesome
