@@ -1,4 +1,4 @@
--- Migration number: 0001 	 2024-03-19T07:40:29.575Z
+-- Migration number: 0001
 CREATE TABLE user_account (
 	id TEXT PRIMARY KEY,
 	email TEXT NOT NULL UNIQUE,
