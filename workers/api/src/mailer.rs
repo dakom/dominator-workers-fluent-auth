@@ -1,4 +1,4 @@
-use crate::{config::{DKIM_DOMAIN, DKIM_SELECTOR, FRONTEND_DOMAIN, FRONTEND_ROOT_PATH, MAILER_ADDRESS, MAILER_NAME}, context::ContentLanguage, prelude::*};
+use crate::{config::{DKIM_DOMAIN, DKIM_SELECTOR, FRONTEND_DOMAIN, FRONTEND_ROOT_PATH, MAILER_ADDRESS, MAILER_NAME, SEND_EMAIL}, context::ContentLanguage, prelude::*};
 use serde::Serialize;
 use shared::frontend::route::{Route as FrontendRoute, Landing as FrontendLanding, AuthRoute as FrontendAuthRoute};
 use web_sys::{js_sys, Headers, RequestInit, WorkerGlobalScope};
@@ -15,31 +15,7 @@ pub enum MailerKind {
     }
 }
 
-#[cfg(debug_assertions)]
-pub async fn send(ctx: &ApiContext, address: &str, kind: MailerKind) -> ApiResult<()> {
-    let oob_url = match kind {
-        MailerKind::EmailVerification { oob_token_id, oob_token_key } => {
-            // and the *frontend* url to email
-            FrontendRoute::Landing(FrontendLanding::Auth(FrontendAuthRoute::VerifyEmailConfirm{
-                oob_token_id, 
-                oob_token_key
-            })).link(FRONTEND_DOMAIN, FRONTEND_ROOT_PATH)
-        },
-        MailerKind::PasswordReset { oob_token_id, oob_token_key } => {
-            FrontendRoute::Landing(FrontendLanding::Auth(FrontendAuthRoute::PasswordResetConfirm {
-                oob_token_id, 
-                oob_token_key
-            })).link(FRONTEND_DOMAIN, FRONTEND_ROOT_PATH)
-        }
-    };
 
-    worker::console_log!("in non-debug, email would be sent to {} with link: {}", address, oob_url);
-
-    Ok(())
-}
-
-
-#[cfg(not(debug_assertions))]
 pub async fn send(ctx: &ApiContext, address: &str, kind: MailerKind) -> ApiResult<()> {
 
     let (subject, content) = match kind {
@@ -83,35 +59,40 @@ pub async fn send(ctx: &ApiContext, address: &str, kind: MailerKind) -> ApiResul
         }
     };
 
-    let mut init = RequestInit::new();
-    init.method("POST");
-    let headers = Headers::new().unwrap();
-    headers.set("content-type", "application/json")?;
-    init.headers(&headers);
+    if !SEND_EMAIL {
+        worker::console_log!("in non-debug, email would be sent to {} with:", address);
+        worker::console_log!("{}", content);
+    } else {
+        let mut init = RequestInit::new();
+        init.method("POST");
+        let headers = Headers::new().unwrap();
+        headers.set("content-type", "application/json")?;
+        init.headers(&headers);
 
-    let body = serde_json::to_string_pretty(&MailChannelsRequest::new(ctx, address.to_string(), None, subject, content)).map_err(|err| err.to_string())?;
-    init.body(Some(&JsValue::from_str(&body)));
+        let body = serde_json::to_string_pretty(&MailChannelsRequest::new(ctx, address.to_string(), None, subject, content)).map_err(|err| err.to_string())?;
+        init.body(Some(&JsValue::from_str(&body)));
 
-    let req = Request::new_with_str_and_init("https://api.mailchannels.net/tx/v1/send", &init).unwrap();
+        let req = Request::new_with_str_and_init("https://api.mailchannels.net/tx/v1/send", &init).unwrap();
 
-    let promise = js_sys::global().unchecked_into::<WorkerGlobalScope>().fetch_with_request(&req);
-    let resp = JsFuture::from(promise).await.map(|resp| resp.unchecked_into::<Response>());
+        let promise = js_sys::global().unchecked_into::<WorkerGlobalScope>().fetch_with_request(&req);
+        let resp = JsFuture::from(promise).await.map(|resp| resp.unchecked_into::<Response>());
 
-    match resp {
-        Ok(resp) => {
-            if resp.ok() {
-                console_log!("email sent to {}", address);
-            } else {
-                console_warn!("email failed to send to {}, status code: {}, status text: {}", address, resp.status(), resp.status_text());
-                if let Some(err_body) = JsFuture::from(resp.text()?).await?.as_string() {
-                    console_warn!("{}", err_body);
+        match resp {
+            Ok(resp) => {
+                if resp.ok() {
+                    console_log!("email sent to {}", address);
+                } else {
+                    console_warn!("email failed to send to {}, status code: {}, status text: {}", address, resp.status(), resp.status_text());
+                    if let Some(err_body) = JsFuture::from(resp.text()?).await?.as_string() {
+                        console_warn!("{}", err_body);
+                    }
+                    return Err(format!("email failed to send to {}, status code: {}, status text: {}", address, resp.status(), resp.status_text()).into());
                 }
-                return Err(format!("email failed to send to {}, status code: {}, status text: {}", address, resp.status(), resp.status_text()).into());
+            },
+            Err(err) => {
+                console_warn!("email failed to send to {}, error: {:?}", address, err);
+                return Err(format!("email failed to send to {}, error: {:?}", address, err).into());
             }
-        },
-        Err(err) => {
-            console_warn!("email failed to send to {}, error: {:?}", address, err);
-            return Err(format!("email failed to send to {}, error: {:?}", address, err).into());
         }
     }
 
@@ -140,9 +121,9 @@ impl MailChannelsRequest {
 #[derive(Serialize, Debug)]
 struct Personalization {
     pub to: Vec<Person>,
-    pub dkim_domain: Option<&'static str>,
-    pub dkim_selector: Option<&'static str>,
-    pub dkim_private_key: Option<String>,
+    pub dkim_domain: &'static str,
+    pub dkim_selector: &'static str,
+    pub dkim_private_key: String,
 }
 
 impl Personalization {
@@ -151,7 +132,7 @@ impl Personalization {
             to: vec![Person { email, name }],
             dkim_domain: DKIM_DOMAIN, 
             dkim_selector: DKIM_SELECTOR,
-            dkim_private_key: if DKIM_DOMAIN.is_some() && DKIM_SELECTOR.is_some() { Some(get_secret(&ctx.env, "DKIM_PRIVATE_KEY").unwrap()) } else { None } 
+            dkim_private_key: get_secret(&ctx.env, "DKIM_PRIVATE_KEY").unwrap()
         }
     }
 }

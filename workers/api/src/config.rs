@@ -29,6 +29,7 @@ cfg_if::cfg_if! {
         pub const MAILER_NAME:&'static str = "Demo Mailer";
         pub const DEFAULT_CONTENT_LANG:ContentLanguage = ContentLanguage::English;
         pub const ALLOWED_ORIGINS: &[&'static str] = &["http://localhost:8080", "http://127.0.0.1:8080"];
+        pub const SEND_EMAIL: bool = false;
     } else {
         pub const FRONTEND_DOMAIN:&'static str = "https://example.pages.dev";
         pub const FRONTEND_ROOT_PATH: &'static str = "";
@@ -40,6 +41,7 @@ cfg_if::cfg_if! {
         pub const MAILER_NAME:&'static str = "Demo Mailer";
         pub const DEFAULT_CONTENT_LANG:ContentLanguage = ContentLanguage::English;
         pub const ALLOWED_ORIGINS: &[&'static str] = &["https://example.com"];
+        pub const SEND_EMAIL: bool = true;
     }
 }
 
