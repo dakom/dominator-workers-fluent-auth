@@ -1,5 +1,5 @@
 use dominator_helpers::futures::AsyncLoader;
-use shared::backend::route::OpenIdProvider;
+use shared::{auth::FRONTEND_ROUTE_AFTER_SIGNIN, backend::route::OpenIdProvider};
 use super::{register, openid_connect};
 use crate::{atoms::{buttons::{OutlineButton, Squareish1Button}, input::{TextInput, TextInputKind}}, prelude::*};
 
@@ -75,7 +75,7 @@ impl Register {
 
                                         match register(&state.email.value.get_cloned().unwrap_or_default(), &state.password.value.get_cloned().unwrap_or_default()).await {
                                             Ok(_) => {
-                                                log::info!("register succesful");
+                                                FRONTEND_ROUTE_AFTER_SIGNIN.go_to_url();
                                             },
                                             Err(e) => {
                                                 state.error.set(e);

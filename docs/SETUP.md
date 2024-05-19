@@ -6,7 +6,7 @@
 4. [Trunk](https://trunkrs.dev/)
 5. [Taskfile](https://taskfile.dev/) 
     - not _required_ but makes life easier
-6. [http-server](https://www.npmjs.com/package/http-server)
+6. [http-server](https://crates.io/crates/http-server)
     - install globally or adjust taskfile command
     - only used for serving media in local dev
 

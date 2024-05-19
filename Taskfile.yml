@@ -23,7 +23,7 @@ tasks:
   localmedia-dev:
     dir: "{{.MEDIA_DIR}}"
     cmds: 
-      - http-server -g -b --cors -p 9000
+      - http-server --gzip --cors -p 9000
 
   api-dev:
     dir: ./workers/api 
