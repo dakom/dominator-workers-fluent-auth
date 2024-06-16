@@ -1,7 +1,7 @@
-use std::{borrow::Cow, str::FromStr};
+use std::{borrow::Cow, str::FromStr, time::Duration};
 
 use openidconnect::{
-    core::{CoreClient, CoreIdTokenClaims, CoreIdTokenVerifier, CoreProviderMetadata, CoreResponseType}, http::{self, HeaderMap, HeaderName, HeaderValue}, AuthenticationFlow, AuthorizationCode, ClientId, ClientSecret, IssuerUrl, Nonce, OAuth2TokenResponse, RedirectUrl, Scope, TokenUrl
+    core::{CoreAuthPrompt, CoreClient, CoreIdTokenClaims, CoreIdTokenVerifier, CoreProviderMetadata, CoreResponseType}, http::{self, HeaderMap, HeaderName, HeaderValue}, AuthenticationFlow, AuthorizationCode, ClientId, ClientSecret, IssuerUrl, Nonce, OAuth2TokenResponse, RedirectUrl, Scope, TokenUrl
 };
 use shared::backend::route::{AuthRoute, OpenIdProvider, Route};
 use worker::{js_sys::{self, try_iter}, wasm_bindgen_futures::JsFuture};
@@ -46,6 +46,9 @@ impl OpenIdProcessor {
             Nonce::new_random,
         )
         .add_scope(Scope::new("email".to_string()))
+        // setting these two will force re-authentication every time
+        .add_prompt(CoreAuthPrompt::Login)
+        .set_max_age(Duration::ZERO)
         // this doesn't work in a test scenario, maybe requires publishing / sensitive verification?
         //.add_scope(Scope::new("profile".to_string()))
         .url();
