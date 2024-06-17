@@ -1,7 +1,7 @@
 use dominator_helpers::futures::AsyncLoader;
 use shared::{auth::FRONTEND_ROUTE_AFTER_SIGNIN, backend::route::OpenIdProvider};
 use super::{signin, send_password_reset, openid_connect};
-use crate::{atoms::{buttons::{OutlineButton, Squareish1Button}, input::{TextInput, TextInputKind}}, prelude::*};
+use crate::{atoms::{buttons::{ButtonSize, OutlineButton, Squareish1Button}, input::{TextInput, TextInputKind}}, prelude::*};
 
 pub(super) struct Signin {
     pub error: ApiErrorDisplay,
@@ -27,7 +27,6 @@ impl Signin {
             loader: AsyncLoader::new(),
         })
     }
-
     pub fn render(self: Arc<Self>) -> Dom {
         let state = self;
         static CONTAINER:Lazy<String> = Lazy::new(|| {
@@ -51,7 +50,6 @@ impl Signin {
                 .style("display", "flex")
                 .style("flex-direction", "column")
                 .style("align-items", "center")
-                .style("gap", "1.875rem")
             }
         });
         static BUTTONS:Lazy<String> = Lazy::new(|| {
@@ -69,11 +67,15 @@ impl Signin {
                 notice.map(|notice| match notice {
                     SigninNotice::EmailNotVerified => {
                         html!("div", {
+                            .class(&*TEXT_SIZE_LG)
+                            .style("margin-bottom", "1.875rem")
                             .text(&get_text!("landing-signin-email-not-verified"))
                         })
                     },
                     SigninNotice::PasswordReset => {
                         html!("div", {
+                            .class(&*TEXT_SIZE_LG)
+                            .style("margin-bottom", "1.875rem")
                             .text(&get_text!("landing-signin-password-reset-sent"))
                         })
                     },
@@ -84,10 +86,16 @@ impl Signin {
                     .class(&*AREA_SPLIT)
                     .child(html!("div", {
                         .class(&*INPUTS)
-                        .child(state.email.render(Some(&get_text!("landing-signin-form-email"))))
-                        .child(state.password.render(Some(&get_text!("landing-signin-form-password"))))
+                        .child(html!("div", {
+                            .class(&*INPUTS)
+                            .style("gap", "1.875rem")
+                            .child(state.email.render(Some(&get_text!("landing-signin-form-email"))))
+                            .child(state.password.render(Some(&get_text!("landing-signin-form-password"))))
+                        }))
+
                         .child(html!("div", {
                             .style("width", "100%")
+                            .style("margin-top", "1.875rem")
                             .class(&*BUTTONS)
                             .child(Squareish1Button::new().render(
                                 get_text!("landing-signin-button"),
@@ -105,25 +113,27 @@ impl Signin {
                                     }));
                                 })
                             ))
-                            .child(html!("div", {
-                                .child(OutlineButton::new(true).render(
-                                    None,
-                                    get_text!("landing-forgot-password-button"),
-                                    clone!(state => move || {
-                                        state.error.clear();
-                                        state.loader.load(clone!(state => async move {
-                                            match send_password_reset(Some(&state.email.value.get_cloned().unwrap_or_default())).await {
-                                                Ok(_) => {
-                                                    state.notice.set_neq(Some(SigninNotice::PasswordReset));
-                                                },
-                                                Err(e) => {
-                                                    state.error.set(e);
-                                                }
+                        }))
+                        .child(html!("div", {
+                            .style("margin-top", "1.875rem")
+                            .style("align-self", "flex-start")
+                            .child(OutlineButton::new(true).set_size(ButtonSize::Sm).render(
+                                None,
+                                get_text!("landing-reset-password-button"),
+                                clone!(state => move || {
+                                    state.error.clear();
+                                    state.loader.load(clone!(state => async move {
+                                        match send_password_reset(Some(&state.email.value.get_cloned().unwrap_or_default())).await {
+                                            Ok(_) => {
+                                                state.notice.set_neq(Some(SigninNotice::PasswordReset));
+                                            },
+                                            Err(e) => {
+                                                state.error.set(e);
                                             }
-                                        }));
-                                    })
-                                ))
-                            }))
+                                        }
+                                    }));
+                                })
+                            ))
                         }))
                     }))
                     .child(html!("div", {
@@ -140,26 +150,6 @@ impl Signin {
                         .style("flex-direction", "column")
                         .style("justify-content", "center")
                         .class(&*BUTTONS)
-                        .child(OutlineButton::new(false).render(
-                            Some(html!("img", {
-                                .style("height", "2rem")
-                                .attr("src", &CONFIG.app_image_url("facebook-logo.svg"))
-                            })),
-                            get_text!("landing-signin-facebook-button"),
-                            clone!(state => move || {
-                                state.loader.load(clone!(state => async move {
-                                    state.error.clear();
-                                    match openid_connect(OpenIdProvider::Facebook).await {
-                                        Ok(_) => {
-                                            // openid_connect will redirect
-                                        },
-                                        Err(e) => {
-                                            state.error.set(e);
-                                        }
-                                    }
-                                }));
-                            })
-                        ))
                         .child(OutlineButton::new(false).render(
                             Some(html!("img", {
                                 .style("height", "2rem")
@@ -180,6 +170,26 @@ impl Signin {
                                 }));
                             })
                         ))
+                        .child(OutlineButton::new(false).render(
+                            Some(html!("img", {
+                                .style("height", "2rem")
+                                .attr("src", &CONFIG.app_image_url("facebook-logo.svg"))
+                            })),
+                            get_text!("landing-signin-facebook-button"),
+                            clone!(state => move || {
+                                state.loader.load(clone!(state => async move {
+                                    state.error.clear();
+                                    match openid_connect(OpenIdProvider::Facebook).await {
+                                        Ok(_) => {
+                                            // openid_connect will redirect
+                                        },
+                                        Err(e) => {
+                                            state.error.set(e);
+                                        }
+                                    }
+                                }));
+                            })
+                        ))
                     }))
                 }))
                 .child(html!("div", {
@@ -189,23 +199,11 @@ impl Signin {
                     .child(html!("div", {
                         .style("margin-top", "1.875rem")
                         .style("display", "flex")
+                        .style("flex-direction", "row")
                         .style("justify-content", "center")
                         .style("align-items", "center")
-                        .style("gap", "0.625rem")
-                        .child(html!("div", {
-                            .class(&*TEXT_SIZE_LG)
-                            .text(&get_text!("landing-signin-footer"))
-                        }))
-                        .child(html!("div", {
-                            .class(&*BUTTONS)
-                            .child(OutlineButton::new(true).render(
-                                None,
-                                get_text!("landing-register-button"),
-                                || {
-                                    Route::Landing(Landing::Auth(AuthRoute::Register)).go_to_url();
-                                }
-                            ))
-                        }))
+                        .style("gap", "3rem")
+                        .child(state.render_create_account_line())
                     }))
                 }))
             }))
@@ -224,6 +222,28 @@ impl Signin {
             .class(&*TEXT_WEIGHT_BOLD)
             .class(&*ERROR_MESSAGE)
             .text_signal(self.error.text_signal())
+        })
+    }
+
+    fn render_create_account_line(self: &Arc<Self>) -> Dom {
+        html!("div", {
+            .style("display", "flex")
+            .style("justify-content", "center")
+            .style("align-items", "center")
+            .style("gap", "0.625rem")
+            .child(html!("div", {
+                .class(&*TEXT_SIZE_LG)
+                .text(&get_text!("landing-signin-footer-no-account"))
+            }))
+            .child(html!("div", {
+                .child(OutlineButton::new(true).render(
+                    None,
+                    get_text!("landing-create-account-button"),
+                    || {
+                        Route::Landing(Landing::Auth(AuthRoute::Register)).go_to_url();
+                    }
+                ))
+            }))
         })
     }
 }

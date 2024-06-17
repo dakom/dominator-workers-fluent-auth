@@ -4,6 +4,48 @@ use dominator_helpers::signals::arc_signal_fn;
 use unic_langid::CharacterDirection;
 use web_sys::HtmlElement;
 
+pub struct MoreButton {
+    pub inner: ButtonInner,
+}
+
+impl MoreButton {
+    pub fn new() -> Self {
+        Self {
+            inner: ButtonInner::new(),
+        }
+    }
+
+    pub fn render(&self, text: String, on_click: impl FnMut() + 'static) -> Dom {
+        static CLASS:Lazy<String> = Lazy::new(|| {
+            class! {
+                .style("display", "inline-flex")
+                .style("justify-content", "center")
+                .style("align-items", "baseline")
+                .style("gap", "0.625rem")
+            }
+        });
+        self.inner.render(|hover| clone!(hover => move |dom| {
+            apply_methods!(dom, {
+                .class([&*CLASS, &*TEXT_SIZE_LG])
+                .style_signal("color", hover.signal().map(|hover| {
+                    if hover {
+                        ColorSemantic::Darkish.to_str()
+                    } else {
+                        ColorSemantic::MidGrey.to_str()
+                    }
+                }))
+                .apply(handle_on_click(on_click))
+                .children([
+                    html!("div", {
+                        .text(&text)
+                    }),
+                    MoreArrow::render(hover.signal())
+                ])
+            })
+        }))
+    }
+}
+
 pub struct UnderlineButton {
     pub inner: ButtonInner,
 }
@@ -129,22 +171,35 @@ impl Squareish1Button {
 pub struct OutlineButton {
     pub accent: bool,
     pub inner: ButtonInner,
+    pub size: ButtonSize,
 }
 
-impl OutlineButton {
-    pub fn new(accent: bool) -> Self {
-        Self {
-            accent,
-            inner: ButtonInner::new(),
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum ButtonSize {
+    Sm,
+    Lg,
+    Md,
+    Xlg,
+    H3,
+    H2,
+    H1,
+}
+
+impl ButtonSize {
+    pub fn into_text_size_class(self) -> &'static str {
+        match self {
+            Self::Sm => &*TEXT_SIZE_SM,
+            Self::Lg => &*TEXT_SIZE_LG,
+            Self::Md => &*TEXT_SIZE_MD,
+            Self::Xlg => &*TEXT_SIZE_XLG,
+            Self::H3 => &*TEXT_SIZE_H3,
+            Self::H2 => &*TEXT_SIZE_H2,
+            Self::H1 => &*TEXT_SIZE_H1,
         }
     }
 
-    pub fn hovering(&self) -> &Mutable<bool> {
-        &self.inner.hovering
-    }
-
-    pub fn render(&self, image: Option<Dom>, text: String, on_click: impl FnMut() + 'static) -> Dom {
-        static CLASS:Lazy<String> = Lazy::new(|| {
+    pub fn into_container_class(self) -> &'static str {
+        static DEFAULT_CLASS:Lazy<String> = Lazy::new(|| {
             class! {
                 .style("display", "flex")
                 .style("align-items", "center")
@@ -155,6 +210,45 @@ impl OutlineButton {
                 .style("border-style", "solid")
             }
         });
+
+        static SM_CLASS:Lazy<String> = Lazy::new(|| {
+            class! {
+                .style("display", "flex")
+                .style("align-items", "center")
+                .style("gap", "0.625rem")
+                .style("padding", "0.375rem 1.25rem")
+                .style("border-radius", "0.25rem")
+                .style("border-width", "1px")
+                .style("border-style", "solid")
+            }
+        });
+
+        match self {
+            Self::Sm => &*SM_CLASS,
+            _ => &*DEFAULT_CLASS
+        }
+    }
+}
+
+impl OutlineButton {
+    pub fn new(accent: bool) -> Self {
+        Self {
+            accent,
+            inner: ButtonInner::new(),
+            size: ButtonSize::Lg, 
+        }
+    }
+
+    pub fn set_size(&mut self, size: ButtonSize) -> &mut Self {
+        self.size = size;
+        self
+    }
+
+    pub fn hovering(&self) -> &Mutable<bool> {
+        &self.inner.hovering
+    }
+
+    pub fn render(&self, image: Option<Dom>, text: String, on_click: impl FnMut() + 'static) -> Dom {
 
         let accent = self.accent;
         let color = move |hover: bool| -> &'static str {
@@ -174,9 +268,10 @@ impl OutlineButton {
         };
 
 
+        let size = self.size;
         self.inner.render(|hover| clone!(hover => move |dom| {
             apply_methods!(dom, {
-                .class(&*CLASS)
+                .class(size.into_container_class())
                 .style_signal("border-color", hover.signal().map(move |hover| color(hover)))
                 .style_signal("color", hover.signal().map(move |hover| color(hover)))
                 .apply(handle_on_click(on_click))
@@ -189,7 +284,7 @@ impl OutlineButton {
                     dom.child(image.unwrap())
                 })
                 .child(html!("div", {
-                    .class(&*TEXT_SIZE_LG)
+                    .class(size.into_text_size_class())
                     .text(&text)
                 }))
             })

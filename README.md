@@ -20,7 +20,7 @@ In the meantime - this is more of a cutoff point that can be cloned and used as 
 # High-level supported features
 
 * Compiletime API checks
-    * (pseudocode) `let response = await endpoint.fetch(request)` from client is typechecked, impossible to send mismatched request or get mismatched response
+    * (pseudocode) `let response = endpoint.fetch(request).await` from client is typechecked, impossible to send mismatched request or get mismatched response
     * (pseudocode) `endpoint.send_response(request)` from server is typechecked, impossible to send mismatched response, request is known
     * both of these are kept fully in sync, api changes anywhere along the stack are checked at compiletime
     * isn't (yet) macro-driven, requires implementing a trait in frontend, shared, and backend for each endpoint

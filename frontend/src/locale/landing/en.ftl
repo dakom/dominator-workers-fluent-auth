@@ -11,7 +11,8 @@ landing-signin-password-reset-sent = We've sent you an email with a link to rese
 landing-signin-form-email = Enter your email
 landing-signin-form-password = Enter your password
 landing-signin-button = Sign in 
-landing-register-button = Register
+landing-create-account-button = Create account
+landing-reset-password-button = Reset password
 landing-forgot-password-button = Forgot password
 landing-signin-facebook-button = Signin with Facebook
 landing-signin-google-button = Signin with Google
@@ -28,7 +29,8 @@ landing-verify-email-success = Email verified! Redirecting to dashboard...
 landing-signing-in = Signing in...
 landing-agree-terms = By signing up, you agree to our terms and conditions 
 landing-register-footer = Already have an account?
-landing-signin-footer = Don't have an account?
+landing-signin-footer-no-account = First time here?
+landing-signin-footer-forgot-password = Trouble signing in?
 landing-or = or 
 
 # dashboard

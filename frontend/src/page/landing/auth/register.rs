@@ -68,7 +68,7 @@ impl Register {
                             .style("width", "100%")
                             .class(&*BUTTONS)
                             .child(Squareish1Button::new().render(
-                                get_text!("landing-register-button"),
+                                get_text!("landing-create-account-button"),
                                 clone!(state => move || {
                                     state.loader.load(clone!(state => async move {
                                         state.error.clear();

@@ -29,6 +29,8 @@ landing-signing-in = מתחבר...
 landing-agree-terms = בהרשמה, אתה מסכים לתנאים ולהגבלות שלנו
 landing-register-footer = יש לך כבר חשבון?
 landing-signin-footer = אין לך חשבון?
+landing-signin-footer-no-account = פעם ראשונה כאן?
+landing-create-account-button = צור חשבון
 landing-or = או
 
 # dashboard
