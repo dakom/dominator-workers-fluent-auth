@@ -17,23 +17,22 @@ html!("div", {
     .text(get_text!("greeting", {
         "name" => "bob"
     }))
-}) 
+})
 
 */
 
-use std::{borrow::Cow, collections::HashMap, sync::{Arc, RwLock}};
+use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
+use anyhow::{anyhow, Context, Result};
 use awsm_web::prelude::UnwrapExt;
 use dominator::{events, html, Dom};
 use fluent::{bundle::FluentBundle, FluentArgs, FluentResource};
-use futures_signals::signal::{Mutable, Signal, SignalExt};
-use once_cell::sync::Lazy;
-use unic_langid::{langid, LanguageIdentifier};
+use futures_signals::signal::{Mutable, SignalExt};
 use intl_memoizer::concurrent::IntlLangMemoizer;
-use anyhow::{anyhow, Context, Result};
+use unic_langid::{langid, LanguageIdentifier};
 use wasm_bindgen::JsCast;
 
-use crate::{TextDirection, CONFIG, TEXT_SIZE_LG};
+use crate::prelude::*;
 
 pub struct Locale {
     pub current: Mutable<Arc<LocaleInfo>>,
@@ -47,12 +46,19 @@ impl Locale {
         match curr.try_get_string(id, args.as_ref()) {
             Ok(value) => value,
             Err(err) => {
+                tracing::warn!("Failed to get message for fluent id: {id} - {err}");
                 if curr.lang_id == self.fallback.lang_id {
-                    panic!("Failed to get message for fluent id: {}: {id} - {err}", curr.lang_id.to_string());
+                    panic!(
+                        "Failed to get message for fluent id: {}: {id} - {err}",
+                        curr.lang_id.to_string()
+                    );
                 } else {
                     match self.fallback.try_get_string(id, args.as_ref()) {
                         Ok(value) => value,
-                        Err(err) => panic!("Failed to get message for fluent id using fallback: {}: {id} - {err}", self.fallback.lang_id.to_string())
+                        Err(err) => panic!(
+                            "Failed to get message for fluent id using fallback: {}: {id} - {err}",
+                            self.fallback.lang_id.to_string()
+                        ),
                     }
                 }
             }
@@ -68,9 +74,9 @@ impl Locale {
         match lang_str.parse::<LanguageIdentifier>() {
             Ok(lang_id) => {
                 // fallback is actually an *optimized* case
-                // it's excluded from the lookup, just set it directly 
+                // it's excluded from the lookup, just set it directly
                 if lang_id.matches(&self.fallback.lang_id, true, true) {
-                    *lock = self.fallback.clone(); 
+                    *lock = self.fallback.clone();
                     return;
                 } else {
                     for id in self.lookup.keys() {
@@ -81,25 +87,31 @@ impl Locale {
                         }
                     }
                 }
-            },
+            }
             Err(_) => {}
         }
 
-        log::warn!("Failed to set current language: {lang_str}");
+        tracing::warn!("Failed to set current language: {lang_str}");
     }
 }
 
 pub struct LocaleInfo {
     pub lang_id: LanguageIdentifier,
-    pub bundle: FluentBundle<FluentResource, IntlLangMemoizer>
+    pub bundle: FluentBundle<FluentResource, IntlLangMemoizer>,
 }
 
 impl LocaleInfo {
-    pub fn try_get<'a, 'b>(&'a self, id: &str, args: Option<&'b FluentArgs>) -> Result<Cow<'b, str>> 
-    where 'a: 'b
+    pub fn try_get<'a, 'b>(&'a self, id: &str, args: Option<&'b FluentArgs>) -> Result<Cow<'b, str>>
+    where
+        'a: 'b,
     {
-        let msg = self.bundle.get_message(id).with_context(|| format!("failed to get message for fluent id: {id}"))?;
-        let pattern = msg.value().with_context(|| format!("failed to get pattern for fluent id: {id}"))?;
+        let msg = self
+            .bundle
+            .get_message(id)
+            .with_context(|| format!("failed to get message for fluent id: {id}"))?;
+        let pattern = msg
+            .value()
+            .with_context(|| format!("failed to get pattern for fluent id: {id}"))?;
         let mut errors = Vec::new();
         let value = self.bundle.format_pattern(&pattern, args, &mut errors);
 
@@ -111,57 +123,65 @@ impl LocaleInfo {
     }
 
     pub fn get<'a, 'b>(&'a self, id: &str, args: Option<&'b FluentArgs>) -> Cow<'b, str>
-    where 'a: 'b
+    where
+        'a: 'b,
     {
         self.try_get(id, args).unwrap_ext()
     }
 
-    pub fn get_string(&self, id: &str, args: Option<&FluentArgs>) -> String 
-    {
+    pub fn get_string(&self, id: &str, args: Option<&FluentArgs>) -> String {
         self.get(id, args).to_string()
     }
 
-    pub fn try_get_string(&self, id: &str, args: Option<&FluentArgs>) -> Result<String>
-    {
+    pub fn try_get_string(&self, id: &str, args: Option<&FluentArgs>) -> Result<String> {
         self.try_get(id, args).map(|x| x.to_string())
     }
-
 
     pub fn dir(&self) -> TextDirection {
         match self.lang_id.language.as_str() {
             "he" => TextDirection::Rtl,
-            _ => TextDirection::Ltr 
+            _ => TextDirection::Ltr,
         }
     }
 
     pub fn new(lang_str: &'static str) -> Self {
         let (lang_id, ftl_texts) = match lang_str {
-            "en" => (langid!("en"), [
-                include_str!("locale/landing/en.ftl"),
-                include_str!("locale/error/en.ftl"),
-            ]),
-            "he" => (langid!("he"), [
-                include_str!("locale/landing/he.ftl"),
-                include_str!("locale/error/he.ftl"),
-            ]),
-            _ => panic!("Unsupported locale: {lang_str}")
+            "en" => (
+                langid!("en"),
+                [
+                    include_str!("locale/landing/en.ftl"),
+                    include_str!("locale/error/en.ftl"),
+                    include_str!("locale/dashboard/en.ftl"),
+                    include_str!("locale/atoms/en.ftl"),
+                ],
+            ),
+            "he" => (
+                langid!("he"),
+                [
+                    include_str!("locale/landing/he.ftl"),
+                    include_str!("locale/error/he.ftl"),
+                    include_str!("locale/dashboard/he.ftl"),
+                    include_str!("locale/atoms/he.ftl"),
+                ],
+            ),
+            _ => panic!("Unsupported locale: {lang_str}"),
         };
 
         let mut bundle = FluentBundle::new_concurrent(vec![lang_id.clone()]);
 
         for ftl_text in &ftl_texts {
-            let resource = FluentResource::try_new(ftl_text.to_string()).expect(&format!("Failed to parse an FTL string for {lang_str}"));
-            bundle.add_resource(resource).expect("Failed to add FTL resources to the bundle.");
+            let resource = FluentResource::try_new(ftl_text.to_string())
+                .expect(&format!("Failed to parse an FTL string for {lang_str}"));
+            bundle
+                .add_resource(resource)
+                .expect("Failed to add FTL resources to the bundle.");
         }
 
-        Self {
-            lang_id,
-            bundle
-        }
+        Self { lang_id, bundle }
     }
 }
 
-pub static LOCALE:Lazy<Locale> = Lazy::new(|| {
+pub static LOCALE: LazyLock<Locale> = LazyLock::new(|| {
     let mut lookup = HashMap::new();
 
     // Add more locales here
@@ -178,18 +198,18 @@ pub static LOCALE:Lazy<Locale> = Lazy::new(|| {
     match CONFIG.default_lang {
         Some(default_lang) => {
             ret.set_lang(default_lang);
-        },
+        }
         None => {
-            if let Some(browser_lang) = web_sys::window()
-                .and_then(|window| window.navigator().language()) {
-                    ret.set_lang(&browser_lang);
-                }
+            if let Some(browser_lang) =
+                web_sys::window().and_then(|window| window.navigator().language())
+            {
+                ret.set_lang(&browser_lang);
+            }
         }
     }
 
     ret
 });
-
 
 #[macro_export]
 macro_rules! text_args {
@@ -219,18 +239,15 @@ macro_rules! get_text {
     }};
 }
 
-
-pub struct LanguageSelector {
-}
+pub struct LanguageSelector {}
 
 impl LanguageSelector {
     pub fn render() -> Dom {
-
         html!("div", {
             .style("display", "flex")
             .style("justify-content", "center")
             .child(html!("select", {
-                .class(&*TEXT_SIZE_LG)
+                .class(FontSize::Lg.class())
                 .event(|evt: events::Change| {
                     if let Some(value) = evt
                         .target()
@@ -243,14 +260,14 @@ impl LanguageSelector {
                 .children([
                     html!("option", {
                         .text("English")
-                        .property("value", "en")
+                        .prop("value", "en")
                         .prop_signal("selected", LOCALE.current.signal_cloned().map(|lang| {
                             lang.lang_id.matches(&langid!("en"), true, true)
                         }))
                     }),
                     html!("option", {
                         .text("Hebrew / עִברִית")
-                        .property("value", "he")
+                        .prop("value", "he")
                         .prop_signal("selected", LOCALE.current.signal_cloned().map(|lang| {
                             lang.lang_id.matches(&langid!("he"), true, true)
                         }))

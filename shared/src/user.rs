@@ -1,9 +1,10 @@
-use std::fmt::Display;
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 use uuid::Uuid;
 use wasm_bindgen::prelude::*;
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+// TODO - make a macro for UUID newtype wrappers
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct UserId(Uuid);
 
 impl UserId {
@@ -34,7 +35,7 @@ impl TryFrom<&str> for UserId {
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match Uuid::parse_str(value) {
             Ok(u) => Ok(Self(u)),
-            Err(e) => Err(e.to_string())
+            Err(e) => Err(e.to_string()),
         }
     }
 }

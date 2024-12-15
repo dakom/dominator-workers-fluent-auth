@@ -1,9 +1,10 @@
-
 #[derive(Debug, Clone)]
 pub enum Route {
     Landing(Landing),
     Dashboard(Dashboard),
     NotFound(NotFoundReason),
+    TermsOfService,
+    PrivacyPolicy,
 }
 
 impl Route {
@@ -18,42 +19,36 @@ impl Route {
             .collect::<Vec<_>>();
         let paths = paths.as_slice();
 
+        // if we need, we can get query params like:
+        //let uid = url.search_params().get("uid");
+
         match paths {
             [""] => Self::Landing(Landing::Welcome),
-            ["register"] => Self::Landing(Landing::Auth(AuthRoute::Register)),
-            ["signin"] => Self::Landing(Landing::Auth(AuthRoute::Signin)),
-            ["reset-password-confirm", oob_token_id, oob_token_key] => {
-                Self::Landing(Landing::Auth(AuthRoute::PasswordResetConfirm { oob_token_id: oob_token_id.to_string(), oob_token_key: oob_token_key.to_string()}))
-            },
             ["no-auth"] => Self::NotFound(NotFoundReason::NoAuth),
-            ["no-oob-code"] => Self::NotFound(NotFoundReason::NoOobCode),
-            ["dashboard", "profile", _section] => {
-                Self::NotFound(NotFoundReason::BadUrl)
-            },
-            ["dashboard"] => {
-                Self::Dashboard(Dashboard::Browse)
-            },
-            ["dashboard", "browse"] => {
-                Self::Dashboard(Dashboard::Browse)
-            },
-            ["verify-email-waiting"] => Self::Landing(Landing::Auth(AuthRoute::VerifyEmailWaiting)),
-            ["verify-email-confirm", oob_token_id, oob_token_key] => {
-                Self::Landing(Landing::Auth(AuthRoute::VerifyEmailConfirm { oob_token_id: oob_token_id.to_string(), oob_token_key: oob_token_key.to_string()}))
-            },
-            ["openid-finalize", session_id, session_key] => {
-                Self::Landing(Landing::Auth(AuthRoute::OpenIdFinalize { session_id: session_id.to_string(), session_key: session_key.to_string()}))
-            },
+            ["auth", auth_path @ ..] => AuthRoute::try_from_paths(auth_path).map(|auth| Self::Landing(Landing::Auth(auth)))
+                .unwrap_or(Self::NotFound(NotFoundReason::BadUrl)),
+            ["dashboard", dashboard_path @ ..] => Dashboard::try_from_paths(dashboard_path).map(Self::Dashboard)
+                .unwrap_or(Self::NotFound(NotFoundReason::BadUrl)),
+            ["register"] => Self::Landing(Landing::Auth(AuthRoute::Register)),
+            ["login"] => Self::Landing(Landing::Auth(AuthRoute::Login)),
+            ["terms-of-service"] => Self::TermsOfService,
+            ["privacy-policy"] => Self::PrivacyPolicy,
             // these usually aren't visited directly, but can be helpful for debugging
             _ => Self::NotFound(NotFoundReason::BadUrl),
         }
     }
 
-    pub fn link(&self, domain: &str, root_path: &str) -> String {
-        if root_path.is_empty() {
-            format!("{}/{}", domain, self.to_string())
-        } else {
-            format!("{}/{}/{}", domain, root_path, self.to_string())
-        }
+    pub fn link_url(&self, _domain: &str, root_path: &str) -> String {
+
+        let s = format!("{}/{}", root_path, self.to_string());
+
+        // let s = if root_path.is_empty() {
+        //     format!("{}/{}", domain, self.to_string())
+        // } else {
+        //     format!("{}/{}/{}", domain, root_path, self.to_string())
+        // };
+
+        s.trim_end_matches(r#"//"#).to_string()
     }
 
     // unlike backend auth, this is just a pure yes/no gate for frontend
@@ -66,51 +61,101 @@ impl Route {
     }
 }
 
-
 impl std::fmt::Display for Route {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s: String = match self {
             Route::Landing(landing) => match landing {
                 Landing::Welcome => "".to_string(),
-                Landing::Auth(auth_page) => match auth_page {
-                    AuthRoute::Signin => "signin".to_string(),
-                    AuthRoute::Register => "register".to_string(),
-                    AuthRoute::VerifyEmailWaiting => "verify-email-waiting".to_string(),
-                    AuthRoute::VerifyEmailConfirm { oob_token_id, oob_token_key} => format!("verify-email-confirm/{oob_token_id}/{oob_token_key}"),
-                    AuthRoute::PasswordResetConfirm{ oob_token_id, oob_token_key} => format!("reset-password-confirm/{oob_token_id}/{oob_token_key}"),
-                    AuthRoute::OpenIdFinalize{ session_id, session_key} => format!("openid-finalize/{session_id}/{session_key}"),
-                },
-            }
-            Route::Dashboard(dashboard) => {
-                match dashboard {
-                    Dashboard::Browse => format!("dashboard/browse"),
+                Landing::Auth(auth_route) => {
+                    format!("auth/{}", auth_route)
                 }
             },
+            Route::Dashboard(dashboard_route) => {
+                format!("dashboard/{}", dashboard_route)
+            },
             Route::NotFound(reason) => match reason {
-                NotFoundReason::BadUrl => "404".to_string(), 
-                NotFoundReason::NoAuth => "no-auth".to_string(), 
-                NotFoundReason::NoOobCode => "no-oob-code".to_string(), 
-            }
+                NotFoundReason::BadUrl => "404".to_string(),
+                NotFoundReason::NoAuth => "no-auth".to_string(),
+            },
+            Route::TermsOfService => "terms-of-service".to_string(),
+            Route::PrivacyPolicy => "privacy-policy".to_string(),
         };
         write!(f, "{}", s)
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+impl AuthRoute {
+    pub fn try_from_paths(paths: &[&str]) -> Option<Self> {
+        match *paths {
+            ["login"] => Some(Self::Login),
+            ["register"] => Some(Self::Register),
+            ["verify-email-waiting"] => Some(Self::VerifyEmailWaiting),
+            ["verify-email-confirm", oob_token_id, oob_token_key] => Some(Self::VerifyEmailConfirm {
+                oob_token_id: oob_token_id.to_string(),
+                oob_token_key: oob_token_key.to_string(),
+            }),
+            ["reset-password-confirm", oob_token_id, oob_token_key] => Some(Self::PasswordResetConfirm {
+                oob_token_id: oob_token_id.to_string(),
+                oob_token_key: oob_token_key.to_string(),
+            }),
+            ["openid-finalize", session_id, session_key] => Some(Self::OpenIdFinalize {
+                session_id: session_id.to_string(),
+                session_key: session_key.to_string(),
+            }),
+            _ => None,
+        }
+    }
+}
+
+impl std::fmt::Display for AuthRoute {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s: String = match self {
+            Self::Login => "login".to_string(),
+            Self::Register => "register".to_string(),
+            Self::VerifyEmailWaiting => "verify-email-waiting".to_string(),
+            Self::VerifyEmailConfirm { oob_token_id, oob_token_key} => format!("verify-email-confirm/{oob_token_id}/{oob_token_key}"),
+            Self::PasswordResetConfirm{ oob_token_id, oob_token_key} => format!("reset-password-confirm/{oob_token_id}/{oob_token_key}"),
+            Self::OpenIdFinalize{ session_id, session_key} => format!("openid-finalize/{session_id}/{session_key}"),
+        };
+
+        write!(f, "{}", s)
+    }
+}
+
+impl std::fmt::Display for Dashboard {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s: String = match self {
+            Dashboard::Profile => "profile".to_string(),
+        };
+        
+        write!(f, "{}", s)
+    }
+}
+
+impl Dashboard {
+    pub fn try_from_paths(paths: &[&str]) -> Option<Self> {
+        match *paths {
+            ["profile"] => Some(Self::Profile),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Dashboard {
-    Browse,
+    Profile,
 }
 
 #[derive(Debug, Clone)]
 pub enum Landing {
     Welcome,
-    Auth(AuthRoute)
+    Auth(AuthRoute),
 }
 
 #[derive(Clone, Debug)]
 pub enum AuthRoute {
-    Signin,
     Register,
+    Login,
     VerifyEmailWaiting,
     VerifyEmailConfirm {
         oob_token_id: String,
@@ -130,5 +175,4 @@ pub enum AuthRoute {
 pub enum NotFoundReason {
     NoAuth,
     BadUrl,
-    NoOobCode
 }

@@ -1,21 +1,26 @@
 [package]
 name = "shared"
-version = "0.1.0"
+version = "0.0.0"
 edition = "2021"
+license = "Apache-2.0"
 
 [dependencies]
-serde = "1.0.197"
-thiserror = "1.0.58"
-uuid = { version = "1.8.0", features = ["serde", "js"]}
-wasm-bindgen = "0.2.92"
-# worker = { path="../local-fork/workers-rs/worker", features = ["d1"], optional = true }
-worker = { version = "0.1.0", features = ["d1"], optional = true }
-serde_json = { version = "1.0.114", optional = true }
+######## General workspace dependencies ########
+serde = {workspace = true} 
+anyhow = {workspace = true} 
+uuid = {workspace = true} 
+wasm-bindgen = {workspace = true}
+thiserror = {workspace = true}
+http = {workspace = true}
+worker = {workspace = true, optional = true}
+serde_json = {workspace = true, optional = true} 
+tracing = {workspace = true}
+tracing-web = {workspace = true}
+tracing-subscriber = {workspace = true}
+time = {workspace = true}
+tracing-panic = {workspace = true}
 
-[features]
-default = []
-worker = ["dep:worker", "dep:serde_json"]
-
+### Proprietary dependencies
 [dependencies.web-sys]
 version = "0.3.69"
 features = [
@@ -26,3 +31,11 @@ features = [
     "Url",
     "Headers"
 ]
+
+[features]
+default = []
+frontend = []
+backend = ["dep:worker", "dep:serde_json"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]

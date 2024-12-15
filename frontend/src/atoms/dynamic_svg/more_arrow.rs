@@ -1,12 +1,11 @@
+use crate::prelude::*;
 use dominator::svg;
-use crate::{prelude::*, theme::responsive::MediaQueryWidth};
 
-pub struct MoreArrow {
-}
+pub struct MoreArrow {}
 
 impl MoreArrow {
     pub fn render(hover_signal: impl Signal<Item = bool> + 'static) -> Dom {
-        static CLASS:Lazy<String> = Lazy::new(|| {
+        static CLASS: LazyLock<String> = LazyLock::new(|| {
             class! {
                 .style("width", "0.68763rem")
                 .style("height", "0.56256rem")
@@ -36,9 +35,9 @@ impl MoreArrow {
 
                     .attr_signal("fill", hover_signal.map(|hover| {
                         if !hover {
-                            ColorSemantic::MidGrey.to_str()
+                            ColorRaw::MidGrey.value()
                         } else {
-                            ColorSemantic::Darkish.to_str()
+                            ColorRaw::Darkish.value()
                         }
                     }))
                 })

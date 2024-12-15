@@ -1,31 +1,26 @@
-use crate::{page::landing::{header::Header, welcome::Welcome}, prelude::*};
+use crate::{
+    page::{header::Header, landing::welcome::Welcome},
+    prelude::*,
+};
 
-mod header;
-mod welcome;
 pub mod auth;
-
+mod welcome;
 
 pub fn section_signal() -> impl Signal<Item = Landing> {
-    Route::signal().map(|route| {
-        match route {
-            Route::Landing(landing) => landing,
-            _ => unreachable!("Landing route signal should only emit Landing routes!") 
-        }
+    Route::signal().map(|route| match route {
+        Route::Landing(landing) => landing,
+        _ => unreachable!("Landing route signal should only emit Landing routes!"),
     })
 }
 
-
-pub struct LandingPage {
-}
+pub struct LandingPage {}
 
 impl LandingPage {
     pub fn new() -> Arc<Self> {
-        Arc::new(Self {
-        })
+        Arc::new(Self {})
     }
 
-    pub fn render(self: Arc<Self>) -> Dom {
-        let state = self;
+    pub fn render(self: &Arc<Self>) -> Dom {
         html!("main", {
             .style("display", "flex")
             .style("flex-direction", "column")
@@ -34,7 +29,7 @@ impl LandingPage {
             .child(html!("div", {
                 .style("flex", "1")
                 .child(Header::new().render())
-                .child_signal(section_signal().map(clone!(state => move |section| {
+                .child_signal(section_signal().map(|section| {
                     match section {
                         Landing::Welcome => {
                             Some(Welcome::new().render())
@@ -43,7 +38,7 @@ impl LandingPage {
                             Some(auth::render(auth_route))
                         },
                     }
-                })))
+                }))
             }))
             .child(LanguageSelector::render())
         })

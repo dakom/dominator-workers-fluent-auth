@@ -1,15 +1,11 @@
-use dominator::{class, styles};
-use futures_signals::signal::SignalExt;
-use once_cell::sync::Lazy;
+use crate::prelude::*;
 
-use crate::theme::responsive::MediaQueryWidth;
-
-const FONT_FAMILY:&str = r#""Noto Sans", sans-serif"#;
+pub(super) const FONT_FAMILY_NOTO: &str = r#""Noto Sans", sans-serif"#;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum TextDirection {
     Ltr,
-    Rtl
+    Rtl,
 }
 
 impl TextDirection {
@@ -21,12 +17,12 @@ impl TextDirection {
     }
 
     pub fn into_class(self) -> &'static str {
-        static RTL:Lazy<String> = Lazy::new(|| {
+        static RTL: LazyLock<String> = LazyLock::new(|| {
             class! {
                 .style("dir", "rtl")
             }
         });
-        static LTR:Lazy<String> = Lazy::new(|| {
+        static LTR: LazyLock<String> = LazyLock::new(|| {
             class! {
                 .style("dir", "ltr")
             }
@@ -39,58 +35,112 @@ impl TextDirection {
     }
 }
 
-pub static TEXT_SIZE_H1:Lazy<String> = Lazy::new(|| {
-    class! {
-        .style("font-family", FONT_FAMILY)
-        .style("font-size", "5.125rem")
-    }
-});
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum FontSize {
+    H1,
+    H2,
+    H3,
+    Lg,
+    Md,
+    Sm,
+    Xlg,
+}
 
-pub static TEXT_SIZE_H2:Lazy<String> = Lazy::new(|| {
-    class! {
-        .style("font-family", FONT_FAMILY)
-        .style("font-size", "3.1875rem")
-        .style("line-height", "3.825rem")
+impl FontSize {
+    pub fn style(self) -> &'static str {
+        match self {
+            Self::H1 => "5.12rem",
+            Self::H2 => "3.19rem",
+            Self::H3 => "1.94rem",
+            Self::Lg => "1.19rem",
+            Self::Md => "0.88rem",
+            Self::Sm => "0.75rem",
+            Self::Xlg => "1.5rem",
+        }
     }
-});
 
-pub static TEXT_SIZE_H3:Lazy<String> = Lazy::new(|| {
-    class! {
-        .style("font-family", FONT_FAMILY)
-        .style("font-size", "1.9375rem")
-    }
-});
+    pub fn class(self) -> &'static str {
+        // these could all individually have .style_signal
+        // driven from Breakpoint::signal()
+        // but instead we just set the font-size directly
+        // on the root element and rems flow from thereA
+        static H1: LazyLock<String> = LazyLock::new(|| {
+            class! {
+                .style("font-size", "5.12rem")
+            }
+        });
 
-pub static TEXT_SIZE_XLG:Lazy<String> = Lazy::new(|| {
-    class! {
-        .style("font-family", FONT_FAMILY)
-        .style("font-size", "1.5rem")
-    }
-});
+        static H2: LazyLock<String> = LazyLock::new(|| {
+            class! {
+                .style("font-size", "3.19rem")
+            }
+        });
 
-pub static TEXT_SIZE_LG:Lazy<String> = Lazy::new(|| {
-    class! {
-        .style("font-family", FONT_FAMILY)
-        .style("font-size", "1.1875rem")
-    }
-});
+        static H3: LazyLock<String> = LazyLock::new(|| {
+            class! {
+                .style("font-size", "1.94rem")
+            }
+        });
 
-pub static TEXT_SIZE_MD:Lazy<String> = Lazy::new(|| {
-    class! {
-        .style("font-family", FONT_FAMILY)
-        .style("font-size", "0.875rem")
-    }
-});
+        static LG: LazyLock<String> = LazyLock::new(|| {
+            class! {
+                .style("font-size", "1.19rem")
+            }
+        });
 
-pub static TEXT_SIZE_SM:Lazy<String> = Lazy::new(|| {
-    class! {
-        .style("font-family", FONT_FAMILY)
-        .style("font-size", "0.75rem")
-    }
-});
+        static MD: LazyLock<String> = LazyLock::new(|| {
+            class! {
+                .style("font-size", "0.88rem")
+            }
+        });
 
-pub static TEXT_WEIGHT_BOLD:Lazy<String> = Lazy::new(|| {
-    class! {
-        .style("font-weight", "700")
+        static SM: LazyLock<String> = LazyLock::new(|| {
+            class! {
+                .style("font-size", "0.75rem")
+            }
+        });
+
+        static XLG: LazyLock<String> = LazyLock::new(|| {
+            class! {
+                .style("font-size", "1.5rem")
+            }
+        });
+
+        match self {
+            Self::H1 => &*H1,
+            Self::H2 => &*H2,
+            Self::H3 => &*H3,
+            Self::Lg => &*LG,
+            Self::Md => &*MD,
+            Self::Sm => &*SM,
+            Self::Xlg => &*XLG,
+        }
     }
-});
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum FontWeight {
+    SemiBold,
+    Bold,
+}
+
+impl FontWeight {
+    pub fn class(self) -> &'static str {
+        static SEMI_BOLD: LazyLock<String> = LazyLock::new(|| {
+            class! {
+                .style("font-weight", "600")
+            }
+        });
+
+        static BOLD: LazyLock<String> = LazyLock::new(|| {
+            class! {
+                .style("font-weight", "700")
+            }
+        });
+
+        match self {
+            Self::SemiBold => &*SEMI_BOLD,
+            Self::Bold => &*BOLD,
+        }
+    }
+}

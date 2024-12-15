@@ -1,22 +1,74 @@
 [workspace]
 members = [
     "frontend",
-    "workers/api",
+    "backend",
     "shared",
 ]
-resolver="2"
+resolver = "2"
 
-[profile.release]
-opt-level = 3
-debug = false
-rpath = false
-lto = true
-debug-assertions = false
-codegen-units = 1
-panic = 'abort'
-incremental = false
-overflow-checks = false
-strip = true
+[workspace.package]
+edition = "2021"
+version = "0.2.0"
+license = "MIT"
+repository = "https://github.com/dakom/dominator-workers-fluent-auth"
+rust-version = "1.80.0"
 
-[profile.dev.package."*"]
-opt-level = 3
+[workspace.dependencies]
+# general
+serde = { version = "1.0.210", default-features = false, features = ["derive"] }
+serde_json = { version = "1.0.128" }
+futures = "0.3"
+anyhow = "1"
+thiserror = "1.0.59"
+cfg-if = "1.0.0"
+itertools = "0.12.1"
+uuid = { version = "1.11.0", features = ["v4", "v7", "serde", "js"] }
+async-trait = "0.1.83"
+hex = "0.4.3"
+time = { version = "0.3", features = ["wasm-bindgen"] }
+bytes = "1.9.0"
+
+# locale
+fluent = "0.16.0"
+unic-langid = { version = "0.9.4", features = ["macros"] }
+intl-memoizer = "0.5.1"
+
+# hash
+argon2 = "0.5.3"
+base64 = "0.22.0"
+sha2 = "0.10.8"
+hmac = "0.12.1"
+
+# randomness
+getrandom = { version = "0.2.12", features = ["js"] }
+rand = "0.8.5"
+
+# timers
+futures-timer = {version = "3.0.3", features=["wasm-bindgen"], default-features = false}
+
+# networking
+reqwest = { version = "0.12.5", features = ["json"] }
+
+# wasm-bindgen, js-sys
+js-sys = "0.3.72"
+wasm-bindgen = "0.2.93"
+wasm-bindgen-futures = "0.4.43"
+wasm-streams = "0.4.2"
+
+# logging/tracing
+tracing-subscriber = {version = "0.3.18", features = ["time", "json"]}
+tracing = "0.1"
+tracing-web = "0.1"
+tracing-panic = "0.1.2"
+
+# frontend 
+dominator = "0.5.38"
+dominator_helpers = "0.8.0"
+futures-signals = "0.3.34"
+gloo-events = "0.2.0"
+gloo-timers = { version = "0.3.0", features = ["futures"] }
+awsm_web = { version = "0.45.0", default-features = false, features = ["loaders", "serde_iso"] }
+
+# backend
+worker = { version = "0.4.2", features = ["d1", "http"]}
+http = "1.1.0"

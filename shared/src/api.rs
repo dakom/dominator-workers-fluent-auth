@@ -1,16 +1,17 @@
 /// A given api endpoint must implement exactly ONE of these traits here in the shared crate
 /// And in the backend, it must implement the corresponding extension trait.
-/// (in the frontend, the extension trait is automatically implemented since there's no distinct logic to fetch/request/response) 
-/// 
+/// (in the frontend, the extension trait is automatically implemented since there's no distinct logic to fetch/request/response)
+///
 /// With those two places implemented (here and in backend), the API is fully defined
 /// it's guaranteed that the request, response, method, and auth checks (via route.auth_kind())
 /// are all in sync, across frontend and backend and generated documentation
 /// and that any changes are caught at compile time
 pub mod auth;
-
-use serde::{de::DeserializeOwned, Serialize};
+pub mod info;
 
 use crate::backend::route::Route;
+use http::Method;
+use serde::{de::DeserializeOwned, Serialize};
 
 /// has a request type and a response type
 pub trait ApiBoth {
@@ -51,7 +52,7 @@ pub trait ApiRes {
     const METHOD: Method;
 }
 
-/// has neither a request type nor a response type 
+/// has neither a request type nor a response type
 pub trait ApiEmpty {
     /// The backend route for this endpoint.
     const ROUTE: Route;
@@ -79,23 +80,4 @@ pub trait ApiEmptyDynRoute {
 
     /// The method used to make a request to the endpoint.
     const METHOD: Method;
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Method {
-    Get,
-    Post,
-    Put,
-    Delete,
-}
-
-impl Method {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Method::Get => "GET",
-            Method::Post => "POST",
-            Method::Put => "PUT",
-            Method::Delete => "DELETE",
-        }
-    }
 }

@@ -1,0 +1,50 @@
+[package]
+name = "backend"
+version = "0.0.0"
+edition = "2021"
+license = "Apache-2.0"
+
+[dependencies]
+######## Project dependencies ########
+shared = {path = "../shared", features = ["backend"]}
+
+######## General workspace dependencies ########
+cfg-if = {workspace = true}
+worker = {workspace = true}
+unic-langid = {workspace = true}
+serde = {workspace = true}
+serde_json = {workspace = true}
+async-trait = {workspace = true}
+rand = {workspace = true}
+base64 = {workspace = true}
+getrandom = {workspace = true}
+http = {workspace = true}
+wasm-bindgen = {workspace = true}
+js-sys = {workspace = true}
+wasm-bindgen-futures = {workspace = true}
+uuid = {workspace = true}
+sha2 = {workspace = true}
+hmac = {workspace = true}
+hex = {workspace = true}
+tracing = {workspace = true}
+wasm-streams = {workspace = true}
+futures = {workspace = true}
+bytes = {workspace = true}
+
+######## Proprietary dependencies ########
+
+[dependencies.web-sys]
+version = "0.3.69"
+features = [
+    "Request",
+    "RequestInit",
+    "Response",
+    "ResponseInit",
+    "Url",
+    "Headers",
+    "UrlSearchParams",
+    "RequestCredentials"
+]
+
+[lib]
+crate-type = ["cdylib", "rlib"]

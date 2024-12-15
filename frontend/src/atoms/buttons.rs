@@ -1,322 +1,389 @@
-use crate::{atoms::dynamic_svg::more_arrow::MoreArrow, prelude::*, util::mixins::{handle_on_click, set_on_hover}};
-use dominator::{animation::{easing, MutableAnimation, Percentage}, DomBuilder};
-use dominator_helpers::signals::arc_signal_fn;
-use unic_langid::CharacterDirection;
+use std::pin::Pin;
+
 use web_sys::HtmlElement;
 
-pub struct MoreButton {
-    pub inner: ButtonInner,
-}
-
-impl MoreButton {
-    pub fn new() -> Self {
-        Self {
-            inner: ButtonInner::new(),
-        }
-    }
-
-    pub fn render(&self, text: String, on_click: impl FnMut() + 'static) -> Dom {
-        static CLASS:Lazy<String> = Lazy::new(|| {
-            class! {
-                .style("display", "inline-flex")
-                .style("justify-content", "center")
-                .style("align-items", "baseline")
-                .style("gap", "0.625rem")
-            }
-        });
-        self.inner.render(|hover| clone!(hover => move |dom| {
-            apply_methods!(dom, {
-                .class([&*CLASS, &*TEXT_SIZE_LG])
-                .style_signal("color", hover.signal().map(|hover| {
-                    if hover {
-                        ColorSemantic::Darkish.to_str()
-                    } else {
-                        ColorSemantic::MidGrey.to_str()
-                    }
-                }))
-                .apply(handle_on_click(on_click))
-                .children([
-                    html!("div", {
-                        .text(&text)
-                    }),
-                    MoreArrow::render(hover.signal())
-                ])
-            })
-        }))
-    }
-}
-
-pub struct UnderlineButton {
-    pub inner: ButtonInner,
-}
-
-impl UnderlineButton {
-    pub fn new() -> Self {
-        Self {
-            inner: ButtonInner::new(),
-        }
-    }
-    pub fn render<F, S>(&self, text: String, selected_signal_fn: F, on_click: impl FnMut() + 'static) -> Dom 
-        where
-            F: Fn() -> S + 'static,
-            S: Signal<Item = bool> + 'static
-    {
-        static CLASS:Lazy<String> = Lazy::new(|| {
-            class! {
-                .style("display", "flex")
-                .style("flex-direction", "column")
-            }
-        });
-        self.inner.render(|hover| clone!(hover => move |dom| {
-            #[derive(Clone, Copy, PartialEq, Debug)]
-            enum State {
-                Hover,
-                Selected,
-                Default
-            }
-
-            let state_signal_fn = || map_ref! {
-                let hover = hover.signal(),
-                let selected = selected_signal_fn() => {
-                    if *selected {
-                        State::Selected
-                    } else if *hover {
-                        State::Hover
-                    } else {
-                        State::Default
-                    }
-                }
-            }.dedupe();
-
-            apply_methods!(dom, {
-                .class([&*CLASS, &*TEXT_SIZE_LG])
-                .style_signal("color", state_signal_fn().map(|state| {
-                    match state {
-                        State::Hover | State::Selected => ColorSemantic::Darkish.to_str(),
-                        State::Default => ColorSemantic::MidGrey.to_str(),
-                    }
-                }))
-                .apply(handle_on_click(on_click))
-                .child(html!("div", {
-                    .text(&text)
-                }))
-                .child_signal(state_signal_fn().map(|state| {
-                    if state == State::Hover || state == State::Selected {
-                        let animation = MutableAnimation::new(600.0);
-                        animation.animate_to(Percentage::END);
-                        let animation_signal = animation
-                            .signal()
-                            .map(|t| easing::out(t, easing::cubic))
-                            .map(|t| t.range_inclusive(0.0, 1.0));
-                        Some(html!("div", {
-                            .style("height", "0.125rem")
-                            .style("width", "100%")
-                            .apply_if(state == State::Selected, |dom| {
-                                dom.class(&*COLOR_UNDERLINE_PRIMARY)
-                            })
-                            .apply_if(state != State::Selected, |dom| {
-                                dom.class(&*COLOR_UNDERLINE_SECONDARY)
-                            })
-                            .style("transform", "scaleX(0)")
-                            .style_signal("transform", animation_signal.map(|t| {
-                                format!("scaleX({})", t)
-                            }))
-                        }))
-                    } else {
-                        None
-                    }
-                }))
-            })
-        }))
-    }
-}
-
-pub struct Squareish1Button {
-    pub inner: ButtonInner
-}
-
-impl Squareish1Button {
-    pub fn new() -> Self {
-        Self {
-            inner: ButtonInner::new(),
-        }
-    }
-    pub fn render(&self, text: String, on_click: impl FnMut() + 'static) -> Dom {
-        static CLASS:Lazy<String> = Lazy::new(|| {
-            class! {
-                .style("display", "inline-flex")
-                .style("padding", "0.625rem 1.875rem")
-                .style("justify-content", "center")
-                .style("align-items", "center")
-                .style("gap", "0.625rem")
-                .style("border-radius", "0.25rem")
-            }
-        });
-        self.inner.render(|hover| clone!(hover => move |dom| {
-            apply_methods!(dom, {
-                .class([&*CLASS, &*TEXT_SIZE_LG, &*COLOR_BUTTON_PRIMARY_TEXT])
-                .class_signal(&*COLOR_BUTTON_PRIMARY_BG, hover.signal().map(|x| !x))
-                .class_signal(&*COLOR_BUTTON_PRIMARY_BG_HOVER, hover.signal())
-                .apply(handle_on_click(on_click))
-                .children([
-                    html!("div", {
-                        .text(&text)
-                    }),
-                ])
-            })
-        }))
-    }
-}
-
-pub struct OutlineButton {
-    pub accent: bool,
-    pub inner: ButtonInner,
-    pub size: ButtonSize,
-}
+use crate::{
+    prelude::*,
+    util::mixins::{handle_on_click, set_on_hover},
+};
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum ButtonSize {
     Sm,
     Lg,
-    Md,
     Xlg,
-    H3,
-    H2,
-    H1,
 }
 
 impl ButtonSize {
-    pub fn into_text_size_class(self) -> &'static str {
+    pub fn text_size_class(self) -> &'static str {
         match self {
-            Self::Sm => &*TEXT_SIZE_SM,
-            Self::Lg => &*TEXT_SIZE_LG,
-            Self::Md => &*TEXT_SIZE_MD,
-            Self::Xlg => &*TEXT_SIZE_XLG,
-            Self::H3 => &*TEXT_SIZE_H3,
-            Self::H2 => &*TEXT_SIZE_H2,
-            Self::H1 => &*TEXT_SIZE_H1,
+            Self::Sm => FontSize::Sm.class(),
+            Self::Lg => FontSize::Lg.class(),
+            Self::Xlg => FontSize::Xlg.class(),
         }
     }
 
-    pub fn into_container_class(self) -> &'static str {
-        static DEFAULT_CLASS:Lazy<String> = Lazy::new(|| {
+    pub fn container_class(self) -> &'static str {
+        static DEFAULT_CLASS: LazyLock<String> = LazyLock::new(|| {
             class! {
-                .style("display", "flex")
-                .style("align-items", "center")
-                .style("gap", "0.625rem")
                 .style("padding", "0.625rem 1.875rem")
-                .style("border-radius", "0.25rem")
-                .style("border-width", "1px")
-                .style("border-style", "solid")
             }
         });
 
-        static SM_CLASS:Lazy<String> = Lazy::new(|| {
+        static SM_CLASS: LazyLock<String> = LazyLock::new(|| {
             class! {
-                .style("display", "flex")
-                .style("align-items", "center")
-                .style("gap", "0.625rem")
                 .style("padding", "0.375rem 1.25rem")
-                .style("border-radius", "0.25rem")
-                .style("border-width", "1px")
-                .style("border-style", "solid")
             }
         });
 
         match self {
             Self::Sm => &*SM_CLASS,
-            _ => &*DEFAULT_CLASS
+            _ => &*DEFAULT_CLASS,
         }
     }
 }
 
-impl OutlineButton {
-    pub fn new(accent: bool) -> Self {
-        Self {
-            accent,
-            inner: ButtonInner::new(),
-            size: ButtonSize::Lg, 
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum ButtonColor {
+    Primary,
+    Red,
+}
+
+impl ButtonColor {
+    pub fn bg_class(&self, style: ButtonStyle) -> &'static str {
+        match style {
+            ButtonStyle::Solid => {
+                match self {
+                    Self::Primary => ColorBackground::ButtonPrimary.class(),
+                    Self::Red => ColorBackground::ButtonRed.class(),
+                }
+            } 
+            ButtonStyle::Outline => {
+                ColorBackground::Initial.class()
+            } 
         }
     }
 
-    pub fn set_size(&mut self, size: ButtonSize) -> &mut Self {
+    pub fn bg_hover_class(&self, style: ButtonStyle) -> &'static str {
+        match style {
+            ButtonStyle::Solid => {
+                match self {
+                    Self::Primary => ColorBackground::ButtonPrimaryHover.class(),
+                    Self::Red => ColorBackground::ButtonRedHover.class(),
+                }
+            } 
+            ButtonStyle::Outline => {
+                ColorBackground::Initial.class()
+            } 
+        }
+    }
+
+    pub fn border_class(&self, style: ButtonStyle) -> &'static str {
+        match style {
+            ButtonStyle::Solid => {
+                ColorBorder::Initial.class()
+            } 
+            ButtonStyle::Outline => {
+                match self {
+                    Self::Primary => ColorBorder::ButtonOutlinePrimary.class(),
+                    Self::Red => ColorBorder::ButtonOutlineRed.class(),
+                }
+            } 
+        }
+    }
+
+    pub fn border_hover_class(&self, style: ButtonStyle) -> &'static str {
+        match style {
+            ButtonStyle::Solid => {
+                ColorBorder::Initial.class()
+            } 
+            ButtonStyle::Outline => {
+                match self {
+                    Self::Primary => ColorBorder::ButtonOutlinePrimaryHover.class(),
+                    Self::Red => ColorBorder::ButtonOutlineRedHover.class(),
+                }
+            } 
+        }
+    }
+
+    pub fn color_class(&self, style: ButtonStyle) -> &'static str {
+        match style {
+            ButtonStyle::Solid => {
+                match self {
+                    Self::Primary => ColorText::ButtonPrimary.class(),
+                    Self::Red => ColorText::ButtonPrimary.class(),
+                }
+            } 
+            ButtonStyle::Outline => {
+                match self {
+                    Self::Primary => ColorText::ButtonOutlinePrimary.class(),
+                    Self::Red => ColorText::ButtonOutlineRed.class(),
+                }
+            } 
+        }
+    }
+
+    pub fn color_hover_class(&self, style: ButtonStyle) -> &'static str {
+        match style {
+            ButtonStyle::Solid => {
+                match self {
+                    Self::Primary => ColorText::ButtonPrimary.class(),
+                    Self::Red => ColorText::ButtonPrimary.class(),
+                }
+            },
+            ButtonStyle::Outline => {
+                match self {
+                    Self::Primary => ColorText::ButtonOutlinePrimaryHover.class(),
+                    Self::Red => ColorText::ButtonOutlineRedHover.class(),
+                }
+            }
+        }
+    }
+
+    pub fn bg_disabled_class(self, style: ButtonStyle) -> &'static str {
+        match style {
+            ButtonStyle::Solid => {
+                ColorBackground::ButtonDisabled.class()
+            } 
+            ButtonStyle::Outline => {
+                ColorBackground::Initial.class()
+            } 
+        }
+    }
+
+    pub fn border_disabled_class(self, style: ButtonStyle) -> &'static str {
+        match style {
+            ButtonStyle::Solid => {
+                ColorBorder::Initial.class()
+            } 
+            ButtonStyle::Outline => {
+                ColorBorder::ButtonDisabled.class()
+            } 
+        }
+    }
+
+    pub fn color_disabled_class(self, style: ButtonStyle) -> &'static str {
+        match style {
+            ButtonStyle::Solid => {
+                match self {
+                    Self::Primary => ColorText::ButtonPrimary.class(),
+                    Self::Red => ColorText::ButtonPrimary.class(),
+                }
+            } 
+            ButtonStyle::Outline => {
+                ColorBackground::Initial.class()
+            } 
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum ButtonStyle {
+    Solid,
+    Outline
+}
+
+pub struct Button {
+    size: ButtonSize,
+    style: ButtonStyle,
+    color: ButtonColor,
+    text: String,
+    disabled_signal: Option<Pin<Box<dyn Signal<Item = bool>>>>,
+    on_click: Option<Box<dyn FnMut()>>,
+    link: Option<String>,
+    content_before: Option<Dom>,
+    content_after: Option<Dom>,
+    mixin: Option<Box<dyn MixinFnOnce<HtmlElement>>>,
+}
+
+impl Button {
+    pub fn new() -> Self {
+        Self {
+            size: ButtonSize::Lg,
+            style: ButtonStyle::Solid,
+            color: ButtonColor::Primary,
+            text: "".to_string(),
+            content_before: None,
+            content_after: None,
+            disabled_signal: None,
+            on_click: None,
+            mixin: None,
+            link: None,
+        }
+    }
+
+    pub fn with_text(mut self, text: impl ToString) -> Self {
+        self.text = text.to_string();
+        self
+    }
+
+    pub fn with_content_before(mut self, content: Dom) -> Self {
+        self.content_before = Some(content);
+        self
+    }
+
+    pub fn with_content_after(mut self, content: Dom) -> Self {
+        self.content_after = Some(content);
+        self
+    }
+
+    pub fn with_style(mut self, style: ButtonStyle) -> Self {
+        self.style = style;
+        self
+    }
+
+    pub fn with_link(mut self, link: impl ToString) -> Self {
+        self.link = Some(link.to_string());
+        self
+    }
+
+    pub fn with_size(mut self, size: ButtonSize) -> Self {
         self.size = size;
         self
     }
 
-    pub fn hovering(&self) -> &Mutable<bool> {
-        &self.inner.hovering
+    pub fn with_color(mut self, color: ButtonColor) -> Self {
+        self.color = color;
+        self
     }
 
-    pub fn render(&self, image: Option<Dom>, text: String, on_click: impl FnMut() + 'static) -> Dom {
+    pub fn with_disabled_signal(
+        mut self,
+        disabled_signal: impl Signal<Item = bool> + 'static,
+    ) -> Self {
+        self.disabled_signal = Some(Box::pin(disabled_signal));
+        self
+    }
 
-        let accent = self.accent;
-        let color = move |hover: bool| -> &'static str {
-            if hover {
-                if accent {
-                    ColorSemantic::AccentAlt.to_str()
-                } else {
-                    ColorSemantic::Darkish.to_str()
-                }
-            } else {
-                if accent {
-                    ColorSemantic::Accent.to_str()
-                } else {
-                    ColorSemantic::MidGrey.to_str()
+    pub fn with_on_click(mut self, on_click: impl FnMut() + 'static) -> Self {
+        self.on_click = Some(Box::new(on_click));
+        self
+    }
+
+    pub fn with_mixin(mut self, mixin: impl MixinFnOnce<HtmlElement> + 'static) -> Self {
+        self.mixin = Some(Box::new(mixin));
+        self
+    }
+
+    pub fn render(self) -> Dom {
+        static CLASS: LazyLock<String> = LazyLock::new(|| {
+            class! {
+                .style("display", "inline-flex")
+                .style("justify-content", "center")
+                .style("align-items", "center")
+                .style("gap", "0.625rem")
+                .style("border-radius", "0.25rem")
+                .style("width", "fit-content")
+            }
+        });
+
+        static BORDER_CLASS:LazyLock<String> = LazyLock::new(|| {
+            class! {
+                .style("border-width", "1px")
+                .style("border-style", "solid")
+            }
+        });
+
+        let Self {
+            size,
+            color,
+            text,
+            disabled_signal,
+            content_before,
+            content_after,
+            mut on_click,
+            style,
+            mixin,
+            link,
+        } = self;
+
+        let hovering = Mutable::new(false);
+
+        // doing this instead of a Broadcaster because we want to:
+        // 1. prevent the on_click handler being called if disabled signal is true
+        // 2. show cursor style of not-allowed if disabled signal is true (so setting pointer-events: none doesn't work here)
+        let disabled = Mutable::new(false);
+
+        let neither_hover_nor_disabled_signal = || {
+            map_ref! {
+                let disabled = disabled.signal(),
+                let hovering = hovering.signal() => {
+                    !*disabled && !*hovering
                 }
             }
         };
 
+        let hover_but_not_disabled_signal = || {
+            map_ref! {
+                let disabled = disabled.signal(),
+                let hovering = hovering.signal() => {
+                    !*disabled && *hovering
+                }
+            }
+        };
 
-        let size = self.size;
-        self.inner.render(|hover| clone!(hover => move |dom| {
-            apply_methods!(dom, {
-                .class(size.into_container_class())
-                .style_signal("border-color", hover.signal().map(move |hover| color(hover)))
-                .style_signal("color", hover.signal().map(move |hover| color(hover)))
-                .apply(handle_on_click(on_click))
-                .apply_if(image.is_none(), |dom| {
-                    dom
-                        .style("justify-content", "center")
-                        .style("align-items", "center")
-                })
-                .apply_if(image.is_some(), |dom| {
-                    dom.child(image.unwrap())
-                })
-                .child(html!("div", {
-                    .class(size.into_text_size_class())
-                    .text(&text)
-                }))
+        let cursor_signal = map_ref! {
+            let disabled = disabled.signal(),
+            let hovering = hovering.signal() => {
+                if *disabled {
+                    "not-allowed"
+                } else if *hovering {
+                    "pointer"
+                } else {
+                    "auto"
+                }
+            }
+        };
+
+        let ret = html!("div", {
+            .apply_if(disabled_signal.is_some(), clone!(disabled => move |dom| {
+                dom
+                    .future(disabled_signal.unwrap_ext().for_each(clone!(disabled => move |is_disabled| {
+                        clone!(disabled => async move {
+                            disabled.set_neq(is_disabled);
+                        })
+                    })))
+            }))
+            .class([&*USER_SELECT_NONE, &*CLASS, size.container_class(), size.text_size_class()])
+            .apply(set_on_hover(&hovering))
+            .style_signal("cursor", cursor_signal)
+            .apply_if(style == ButtonStyle::Outline, |dom| {
+                dom.class(&*BORDER_CLASS)
             })
-        }))
-    }
-}
+            .class_signal([color.bg_class(style), color.border_class(style)], neither_hover_nor_disabled_signal())
+            .class_signal([color.bg_hover_class(style), color.border_hover_class(style)], hover_but_not_disabled_signal())
+            .class_signal([color.bg_disabled_class(style), color.border_disabled_class(style)], disabled.signal())
+            .apply(handle_on_click(clone!(disabled => move || {
+                if !disabled.get() {
+                    if let Some(on_click) = &mut on_click {
+                        on_click();
+                    }
+                }
+            })))
+            .apply_if(mixin.is_some(), |dom| {
+                mixin.unwrap_ext()(dom)
+            })
+            .apply_if(content_before.is_some(), |dom| {
+                dom.child(content_before.unwrap())
+            })
+            .child(html!("div", {
+                    .class_signal(color.color_disabled_class(style), disabled.signal())
+                    .class_signal(color.color_hover_class(style), hover_but_not_disabled_signal())
+                    .class_signal(color.color_class(style), neither_hover_nor_disabled_signal())
+                    .text(&text)
+            }))
+            .apply_if(content_after.is_some(), |dom| {
+                dom.child(content_after.unwrap())
+            })
+        });
 
-struct ButtonInner {
-    pub hovering: Mutable<bool>,
-    pub prevent_hover: bool,
-}
-
-impl ButtonInner
-{
-    fn new() -> Self {
-        Self {
-            hovering: Mutable::new(false),
-            prevent_hover: false,
+        match link {
+            Some(link) => {
+                link!(link, {
+                    .child(ret)
+                })
+            }
+            None => ret,
         }
-    }
-
-    fn render<F, F_INNER>(&self, mixin: F) -> Dom
-    where
-        F: FnOnce(Mutable<bool>) -> F_INNER,
-        F_INNER: FnOnce(DomBuilder<HtmlElement>) -> DomBuilder<HtmlElement> + 'static
-    {
-
-        html!("div", {
-            .apply(set_on_hover(&self.hovering))
-            .class_signal(&*CURSOR_POINTER, self.hovering.signal())
-            .class(&*USER_SELECT_NONE)
-            .apply(mixin(self.hovering.clone()))
-        })
     }
 }

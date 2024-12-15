@@ -1,8 +1,10 @@
 error-api-unknown = Unknown error
+error-api-unknown-parse = Unknown parsing error
+error-api-missing-body = Missing body 
+error-api-parse-body = Unable to parse body 
 error-api-not-authorized = Not authorized 
-error-api-register-email-already-exists = Email already exists
-error-api-register-email-unverified = Email unverified
-error-api-signin-invalid = Invalid email or password
-error-api-password-reset-no-user = No user with that email
-error-api-password-reset-invalid-link = Invalid password reset link 
-error-api-openid-invalid = Unable to verify your account, please try again 
+error-api-login-invalid = Invalid email or password
+error-api-terms-not-agreed = Must agree to terms and privacy policy
+error-api-email-empty = Email address is empty
+error-api-email-not-verified = Email unverified
+error-api-email-already-exists = Email already exists

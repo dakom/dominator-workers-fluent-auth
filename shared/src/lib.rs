@@ -1,5 +1,6 @@
-pub mod frontend;
-pub mod backend;
-pub mod user;
-pub mod auth;
 pub mod api;
+pub mod auth;
+pub mod backend;
+pub mod frontend;
+pub mod logger;
+pub mod user;

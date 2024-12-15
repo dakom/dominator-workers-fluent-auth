@@ -1,52 +1,61 @@
-use std::sync::Mutex;
+mod profile;
+mod sidebar;
 
-use wasm_bindgen_futures::spawn_local;
+use std::sync::LazyLock;
 
-use crate::{atoms::buttons::Squareish1Button, prelude::*};
+use profile::ProfileUi;
 
-pub struct DashboardPage {
-}
+use crate::prelude::*;
 
+pub struct DashboardPage {}
 
 impl DashboardPage {
     pub fn new() -> Arc<Self> {
-        Arc::new(Self {
-        })
+        Arc::new(Self {})
     }
 
     pub fn render(self: Arc<Self>) -> Dom {
-        html!("div", {
-            .style("display", "flex")
-            .style("flex-direction", "column")
-            .style("min-height", "100%")
-            .style("padding", "1.56rem 2.5rem")
-            .child(html!("div", {
-                .style("flex", "1")
-                .style("margin-top", "3rem")
+        static CONTAINER: LazyLock<String> = LazyLock::new(|| {
+            class! {
                 .style("display", "flex")
-                .style("flex-direction", "column")
-                .style("align-items", "center")
-                .style("gap", "1rem")
-                .child(html!("div", {
-                    .class(&*TEXT_SIZE_LG)
-                    .text(&get_text!("dashboard-user-id", {
-                        "userId" => AUTH.try_clone_uid().map(|uid| uid.to_string()).unwrap_or_else(|| "none".to_string())
-                    }))
-                }))
-                .child(Squareish1Button::new().render(
-                    get_text!("dashboard-signout-button"),
-                    || {
-                        spawn_local(async {
-                            if let Err(err) = AUTH.signout().await { 
-                                log::error!("signout failed");
-                                log::error!("{:?}", err);
-                            }
-                            Route::Landing(Landing::Welcome).go_to_url();
-                        });
-                    }
-                ))
+            }
+        });
+
+        static SIDEBAR: LazyLock<String> = LazyLock::new(|| {
+            class! {
+                .style("flex-shrink", "0")
+                .style("min-height", "100vh")
+                .style("background-color", ColorBackground::Sidebar.value())
+            }
+        });
+
+        static CONTENT: LazyLock<String> = LazyLock::new(|| {
+            class! {
+                .style("flex-grow", "1")
+                .style("padding", "2rem")
+                .style("width", "100%")
+            }
+        });
+
+        html!("div", {
+            .class(&*CONTAINER)
+            .child(html!("div", {
+                .class(&*SIDEBAR)
+                .child(sidebar::Sidebar::new().render())
             }))
-            .child(LanguageSelector::render())
+            .child_signal(Route::signal().map(|route| {
+                match route {
+                    Route::Dashboard(dashboard) => {
+                        Some(html!("div", {
+                            .class(&*CONTENT)
+                            .child(match dashboard {
+                                Dashboard::Profile => ProfileUi::new().render(),
+                            })
+                        }))
+                    },
+                    _ => None
+                }
+            }))
         })
     }
 }

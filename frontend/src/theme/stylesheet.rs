@@ -1,22 +1,16 @@
-use dominator::stylesheet;
 use crate::{
-    prelude::*, 
-    theme::responsive::MediaQueryWidth,
-    locale::LOCALE
+    locale::LOCALE,
+    prelude::*,
+    theme::{responsive::Breakpoint, typography::FONT_FAMILY_NOTO},
 };
+use dominator::stylesheet;
 
 pub fn init() {
     stylesheet!(":root", {
         .style("box-sizing", "border-box")
         .style_signal("direction", LOCALE.current.signal_cloned().map(|locale| locale.dir().as_str()))
-        .style_signal("font-size", MediaQueryWidth::signal().map(|query_width| {
-            match query_width {
-                MediaQueryWidth::SmallPhone => "6px",
-                MediaQueryWidth::Phone => "10px",
-                MediaQueryWidth::Tablet => "12px",
-                MediaQueryWidth::SmallDesktop => "14px",
-                MediaQueryWidth::Desktop => "16px",
-            }
+        .style_signal("font-size", Breakpoint::signal().map(|breakpoint| {
+            breakpoint.font_size()
         }))
     });
 
@@ -29,6 +23,7 @@ pub fn init() {
         .style("padding", "0")
         .style("width", "100%")
         .style("height", "100%")
+        .style("font-family", FONT_FAMILY_NOTO)
     });
 
     stylesheet!("a", {
@@ -36,4 +31,3 @@ pub fn init() {
         .style("cursor", "pointer")
     })
 }
-
