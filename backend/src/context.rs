@@ -1,5 +1,4 @@
-use crate::{api_ext::FromHttpRequest, auth::AuthUser, config::DEFAULT_CONTENT_LANG, prelude::*};
-use shared::user::UserId;
+use crate::{api_ext::FromHttpRequest, auth::User, config::DEFAULT_CONTENT_LANG, prelude::*};
 use unic_langid::LanguageIdentifier;
 use worker::{Context, Env};
 
@@ -7,12 +6,12 @@ pub struct ApiContext<R> {
     pub req: R,
     pub env: Env,
     pub cf_ctx: Context,
-    pub user: Option<AuthUser>,
+    pub user: Option<User>,
     pub lang: ContentLanguage,
 }
 
 impl ApiContext<HttpRequest> {
-    pub fn new(req: HttpRequest, env: Env, cf_ctx: Context, user: Option<AuthUser>) -> Self {
+    pub fn new(req: HttpRequest, env: Env, cf_ctx: Context, user: Option<User>) -> Self {
         let lang_header = req
             .headers()
             .get("Content-Language")
@@ -52,8 +51,8 @@ impl ApiContext<HttpRequest> {
 }
 
 impl<R> ApiContext<R> {
-    pub fn uid_unchecked(&self) -> UserId {
-        self.user.as_ref().unwrap().account.id.clone()
+    pub fn user_unchecked(&self) -> &User {
+        self.user.as_ref().unwrap()
     }
 }
 

@@ -15,7 +15,7 @@ impl ApiErrorExt for ApiError {
         let (id, args) = match self {
             Self::Auth(auth_error) => match auth_error {
                 AuthError::NotAuthorized => ("error-api-not-authorized", None),
-                AuthError::InvalidLogin => ("error-api-login-invalid", None),
+                AuthError::InvalidPassword => ("error-api-login-invalid-password", None),
                 AuthError::TermsNotAgreed => ("error-api-terms-not-agreed", None),
                 AuthError::EmailEmpty => ("error-api-email-empty", None),
                 AuthError::EmailNotVerified => ("error-api-email-not-verified", None),

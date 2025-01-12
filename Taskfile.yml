@@ -5,7 +5,8 @@ version: '3'
 
 vars:
   DB_LOCAL_DIR: db/local
-  DB_PROJ: DB-omi-assist
+  DB_PROJ: DB-auth-demo
+  PROJECT_NAME: auth-demo
   MEDIA_DIR: "./media"
 
 tasks:
@@ -54,7 +55,7 @@ tasks:
     dir: ./frontend
     cmds:
       # note this does *not* use wrangler.toml
-      - npx wrangler pages deploy ./dist --project-name=omi-assist
+      - npx wrangler pages deploy ./dist --project-name={{.PROJECT_NAME}}
 
   backend-deploy:
     dir: ./backend

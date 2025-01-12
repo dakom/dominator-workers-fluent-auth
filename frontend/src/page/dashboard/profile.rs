@@ -8,7 +8,7 @@ impl ProfileUi {
     }
 
     pub fn render(self: &Arc<Self>) -> Dom {
-        let state = self;
+        let _state = self;
 
         html!("div", {
             .text("TODO")

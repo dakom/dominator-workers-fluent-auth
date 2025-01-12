@@ -5,20 +5,20 @@ use shared::{
 
 use dominator_helpers::futures::AsyncLoader;
 
-pub(super) struct Login {
+pub(super) struct Signin {
     pub error: ApiErrorDisplay,
     pub email: Arc<Mutex<Option<String>>>, 
     pub password: Arc<Mutex<Option<String>>>, 
     pub loader: AsyncLoader,
-    notice: Mutable<Option<LoginNotice>>,
+    notice: Mutable<Option<SigninNotice>>,
 }
 
 #[derive(Clone, Debug, Copy, PartialEq)]
-enum LoginNotice {
+enum SigninNotice {
     PasswordReset,
 }
 
-impl Login {
+impl Signin {
     pub fn new() -> Arc<Self> {
         Arc::new(Self {
             error: ApiErrorDisplay::new(),
@@ -71,7 +71,7 @@ impl Login {
             .child(state.render_error())
             .child_signal(state.notice.signal_cloned().map(|notice| {
                 notice.map(|notice| match notice {
-                    LoginNotice::PasswordReset => {
+                    SigninNotice::PasswordReset => {
                         html!("div", {
                             .class(FontSize::Lg.class())
                             .style("margin-bottom", "1.875rem")
@@ -147,7 +147,7 @@ impl Login {
                                         } else {
                                             match actions::send_password_reset(Some(&email_address)).await {
                                                 Ok(_) => {
-                                                    state.notice.set_neq(Some(LoginNotice::PasswordReset));
+                                                    state.notice.set_neq(Some(SigninNotice::PasswordReset));
                                                 },
                                                 Err(e) => {
                                                     state.error.set(e);

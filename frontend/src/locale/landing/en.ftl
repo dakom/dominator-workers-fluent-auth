@@ -6,17 +6,17 @@ landing-welcome-header = Demo Page
 landing-welcome-byline1 = Using Dominator, Fluent, and
 landing-welcome-byline2 = Cloudflare Workers 
 landing-welcome-register = Register 
-landing-welcome-login = Login
+landing-welcome-login = Signin
 
 # landing auth 
 landing-auth-form-email = Enter your email
 landing-auth-form-password = Enter your password
-landing-login-button = Login 
+landing-login-button = Signin 
 landing-logging-in = Logging in...
 landing-agree-terms = By registering, you agree to our terms and conditions 
-landing-login-facebook-button = Login with Facebook
-landing-login-google-button = Login with Google
-landing-login-title = Login to get started 
+landing-login-facebook-button = Signin with Facebook
+landing-login-google-button = Signin with Google
+landing-login-title = Signin to get started 
 landing-login-reset-password-button = Reset password
 landing-login-notice-email-not-verified = Email is not verified
 landing-login-notice-password-reset-sent = Check your email for a link to reset your password 

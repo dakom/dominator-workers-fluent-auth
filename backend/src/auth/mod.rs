@@ -1,3 +1,3 @@
 mod user;
-pub use user::AuthUser;
+pub use user::*;
 // pub(super) mod durable_objects;

@@ -1,24 +1,16 @@
 use crate::{
-    any_to_json_response,
-    api_ext::*,
-    config::{AUTH_TOKEN_SIGNIN_EXPIRES, ENV_KEY_TELEGRAM_AUTH_TOKEN},
-    db::user::{TelegramAccount, UserAccount},
-    empty_response,
-    kv::auth::AuthKv,
-    ApiContext,
+    any_to_json_response, api_ext::*, config::AUTH_TOKEN_SIGNIN_EXPIRES_DURATION, db::user::{UserAccountDb, UserEmailDb, UserInsertKind}, empty_response, kv::auth::AuthKv, utils::crypto::{hash_password, PasswordSalt}, ApiContext
 };
 use async_trait::async_trait;
 use auth::{
-    AuthCheck, AuthCheckResponse, AuthRegisterEmail, AuthRegisterEmailRequest, AuthRegisterEmailResponse, AuthLogin, AuthLoginRequest, AuthLoginResponse, AuthSignout, AuthSignoutRequest, AuthTokenCreateResponse, AuthTokenKind
+    AuthCheck, AuthCheckResponse, AuthRegisterEmail, AuthRegisterEmailRequest, AuthSigninEmail, AuthSigninEmailRequest, AuthSigninResponse, AuthSignout, AuthSignoutRequest, AuthTokenCreateResponse, AuthTokenKind
 };
-use hmac::{Hmac, Mac};
-use sha2::{Digest, Sha256};
 use shared::{
     api::*,
     auth::HEADER_AUTH_TOKEN_ID,
-    backend::result::{ApiError, ApiResult, AuthError},
+    backend::result::{ApiError, ApiResult, AuthError}, user::UserId,
 };
-use worker::{Env, HttpRequest, HttpResponse};
+use worker::{HttpRequest, HttpResponse};
 
 // Register
 #[async_trait(?Send)]
@@ -29,37 +21,42 @@ impl ApiBothWithExtraExt for AuthRegisterEmail {
 
     async fn handle(
         ctx: &ApiContext<AuthRegisterEmailRequest>,
-    ) -> ApiResult<(AuthRegisterEmailResponse, AuthTokenCreateResponse)> {
+    ) -> ApiResult<(AuthSigninResponse, AuthTokenCreateResponse)> {
         let AuthRegisterEmailRequest {
             email,
             password
         } = &ctx.req;
 
+
+        if UserEmailDb::exists(&ctx.env, &email).await? {
+            return Err(ApiError::Auth(AuthError::EmailAlreadyExists));
+        }
+
+        let password = hash_password(&password, PasswordSalt::CreateNew)?;
+
         // Register in database
-        // let uid = UserId::new(uuid::Uuid::now_v7());
-        // let user_token = uuid::Uuid::now_v7().as_simple().to_string();
-        // UserAccount::insert(&env, &uid, &user_token).await?;
-        // TelegramAccount::insert(&env, tg_uid, &uid).await?;
+        let uid = UserId::new(uuid::Uuid::now_v7());
+        let user_token = uuid::Uuid::now_v7().as_simple().to_string();
+        UserAccountDb::insert(&ctx.env, &uid, &user_token, UserInsertKind::EmailPw { email, password: &password }, Vec::new()).await?;
 
-        // // Log user in
-        // let auth_token = AuthKv::create(
-        //     &env,
-        //     AuthTokenKind::Login,
-        //     uid.clone(),
-        //     user_token.clone(),
-        //     AUTH_TOKEN_SIGNIN_EXPIRES,
-        // )
-        // .await?;
-        // let auth_key = auth_token.key.clone();
 
-        // Ok((AuthRegisterResponse { uid, auth_key }, auth_token))
+        // Sign user in
+        let auth_token = AuthKv::create(
+            &ctx.env,
+            AuthTokenKind::Signin,
+            uid.clone(),
+            user_token.clone(),
+            *AUTH_TOKEN_SIGNIN_EXPIRES_DURATION,
+        )
+        .await?;
+        let auth_key = auth_token.key.clone();
 
-        todo!()
+        Ok((AuthSigninResponse{ auth_key}, auth_token))
     }
 
     async fn response(
         _ctx: &ApiContext<AuthRegisterEmailRequest>,
-        data: AuthRegisterEmailResponse,
+        data: AuthSigninResponse,
         auth_token: AuthTokenCreateResponse,
     ) -> HttpResponse {
         let mut res = any_to_json_response(&data, None).await;
@@ -70,41 +67,45 @@ impl ApiBothWithExtraExt for AuthRegisterEmail {
 
 impl FromHttpRequest for AuthRegisterEmailRequest {}
 
-// Login
+// Signin
 #[async_trait(?Send)]
-impl ApiBothWithExtraExt for AuthLogin {
+impl ApiBothWithExtraExt for AuthSigninEmail {
     type Req = <Self as ApiBoth>::Req;
     type Res = <Self as ApiBoth>::Res;
     type Extra = AuthTokenCreateResponse;
 
     async fn handle(
-        ctx: &ApiContext<AuthLoginRequest>,
-    ) -> ApiResult<(AuthLoginResponse, AuthTokenCreateResponse)> {
-        let AuthLoginRequest {
-            tg_uid,
-            data_check,
-            data_check_hash,
+        ctx: &ApiContext<AuthSigninEmailRequest>,
+    ) -> ApiResult<(AuthSigninResponse, AuthTokenCreateResponse)> {
+        let AuthSigninEmailRequest {
+            email,
+            password
         } = &ctx.req;
 
-        validate_telegram_login(&ctx.env, data_check, data_check_hash)?;
+        let user_email_account = UserEmailDb::load(&ctx.env, &email).await?;
 
-        let tg_account = TelegramAccount::load(&ctx.env, *tg_uid).await?;
-        let user = UserAccount::load(&ctx.env, &tg_account.user_id).await?;
+        let password = hash_password(&password, PasswordSalt::Recover)?;
 
-        // Log user in
+        if user_email_account.password != password {
+            return Err(ApiError::Auth(AuthError::InvalidPassword));
+        }
+
+        // eh, this could be a join with above, but whatever
+        let user = UserAccountDb::load(&ctx.env, &user_email_account.user_id).await?;
+
+        // Sign user in
         let auth_token = AuthKv::create(
             &ctx.env,
-            AuthTokenKind::Login,
+            AuthTokenKind::Signin,
             user.id.clone(),
             user.user_token.clone(),
-            AUTH_TOKEN_SIGNIN_EXPIRES,
+            *AUTH_TOKEN_SIGNIN_EXPIRES_DURATION,
         )
         .await?;
         let auth_key = auth_token.key.clone();
 
         Ok((
-            AuthLoginResponse {
-                uid: user.id,
+            AuthSigninResponse {
                 auth_key,
             },
             auth_token,
@@ -112,8 +113,8 @@ impl ApiBothWithExtraExt for AuthLogin {
     }
 
     async fn response(
-        _ctx: &ApiContext<AuthLoginRequest>,
-        data: AuthLoginResponse,
+        _ctx: &ApiContext<AuthSigninEmailRequest>,
+        data: AuthSigninResponse,
         auth_token: AuthTokenCreateResponse,
     ) -> HttpResponse {
         let mut res = any_to_json_response(&data, None).await;
@@ -122,7 +123,7 @@ impl ApiBothWithExtraExt for AuthLogin {
     }
 }
 
-impl FromHttpRequest for AuthLoginRequest {}
+impl FromHttpRequest for AuthSigninEmailRequest {}
 
 // Signout
 #[async_trait(?Send)]
@@ -135,11 +136,11 @@ impl ApiReqExt for AuthSignout {
         // safe, signout requires that the auth_token in kv was validated
         let user = ctx.user.as_ref().unwrap();
 
-        AuthKv::delete(&ctx.env, AuthTokenKind::Login, &user.token_id).await?;
+        AuthKv::delete(&ctx.env, AuthTokenKind::Signin, &user.token_id).await?;
 
         if *everywhere {
             let user_token = uuid::Uuid::now_v7().as_simple().to_string();
-            UserAccount::update_user_token(&ctx.env, &user.account.id, &user_token).await?;
+            UserAccountDb::update_user_token(&ctx.env, &user.id, &user_token).await?;
         }
 
         Ok(())
@@ -160,31 +161,11 @@ impl ApiResExt for AuthCheck {
     type Res = <Self as ApiRes>::Res;
 
     async fn handle(ctx: &ApiContext<HttpRequest>) -> ApiResult<AuthCheckResponse> {
-        let uid = ctx.uid_unchecked();
-        Ok(AuthCheckResponse { uid })
-    }
-}
+        let user = ctx.user_unchecked();
+        let uid = user.id.clone();
+        let roles = user.roles.clone();
 
-fn validate_telegram_login(env: &Env, data_check: &str, data_check_hash: &str) -> ApiResult<()> {
-    let auth_token = env.secret(ENV_KEY_TELEGRAM_AUTH_TOKEN).unwrap().to_string();
-
-    // Validate the tg hash (https://core.telegram.org/widgets/login#checking-authorization)
-    let mut sha256 = Sha256::new();
-
-    sha256.update(auth_token);
-    let secret_key = sha256.finalize();
-
-    let mut mac =
-        Hmac::<Sha256>::new_from_slice(&secret_key).expect("HMAC can take key of any size");
-    mac.update(data_check.as_bytes());
-    let result = mac.finalize();
-    let computed_hash = hex::encode(result.into_bytes());
-
-    if computed_hash != *data_check_hash {
-        tracing::warn!("hash is invalid {computed_hash} vs. {data_check_hash}");
-        Err(ApiError::Auth(AuthError::NotAuthorized))
-    } else {
-        Ok(())
+        Ok(AuthCheckResponse { uid, roles })
     }
 }
 

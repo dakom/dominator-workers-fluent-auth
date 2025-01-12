@@ -9,14 +9,14 @@ mod kv;
 mod not_found;
 mod prelude;
 mod route;
-mod telegram;
+mod utils;
 
 use config::ALLOWED_ORIGINS;
 use http::{HeaderValue, Method, StatusCode};
 use prelude::*;
 use route::handle_route;
 use shared::{
-    auth::{HEADER_ADMIN_CODE, HEADER_ADMIN_UID, HEADER_AUTH_TOKEN_ID, HEADER_AUTH_TOKEN_KEY},
+    auth::{HEADER_ADMIN_CODE, HEADER_ADMIN_AUTH_UID, HEADER_AUTH_TOKEN_ID, HEADER_AUTH_TOKEN_KEY},
     logger::init_logger,
 };
 use worker::{event, Context, Env};
@@ -44,7 +44,6 @@ async fn main(req: HttpRequest, env: Env, ctx: Context) -> worker::Result<HttpRe
                     // it's up to the frontend to decide what to do with this
                     ApiError::Auth(_) => StatusCode::UNAUTHORIZED,
                     ApiError::Unknown(_) => StatusCode::INTERNAL_SERVER_ERROR,
-                    ApiError::Telegram(_) => StatusCode::INTERNAL_SERVER_ERROR,
                     ApiError::Kv(_) => StatusCode::INTERNAL_SERVER_ERROR,
                     ApiError::Db(_) => StatusCode::INTERNAL_SERVER_ERROR,
                     ApiError::Parse(_) => StatusCode::INTERNAL_SERVER_ERROR,
@@ -76,7 +75,7 @@ fn apply_cors(origin: Option<HeaderValue>, mut res: HttpResponse) -> HttpRespons
         "Access-Control-Allow-Methods",
         "GET, HEAD, POST, OPTIONS".parse().unwrap(),
     );
-    headers.insert("Access-Control-Allow-Headers", format!("Content-Type, {HEADER_AUTH_TOKEN_KEY}, {HEADER_AUTH_TOKEN_ID}, {HEADER_ADMIN_CODE}, {HEADER_ADMIN_UID}").parse().unwrap());
+    headers.insert("Access-Control-Allow-Headers", format!("Content-Type, {HEADER_AUTH_TOKEN_KEY}, {HEADER_AUTH_TOKEN_ID}, {HEADER_ADMIN_CODE}, {HEADER_ADMIN_AUTH_UID}").parse().unwrap());
 
     res
 }

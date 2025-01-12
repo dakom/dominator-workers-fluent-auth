@@ -224,7 +224,7 @@ async fn map_bad_status(res: Response) -> ApiError {
                 AuthError::NotAuthorized => {
                     AUTH.clear();
                 }
-                AuthError::InvalidLogin
+                AuthError::InvalidPassword
                 | AuthError::EmailEmpty
                 | AuthError::EmailNotVerified
                 | AuthError::EmailAlreadyExists

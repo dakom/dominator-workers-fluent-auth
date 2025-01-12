@@ -71,7 +71,7 @@ impl Welcome {
                     Button::new()
                         .with_text(&get_text!("landing-welcome-login"))
                         .with_link({
-                            Route::Landing(Landing::Auth(AuthRoute::Login)).link_ext()
+                            Route::Landing(Landing::Auth(AuthRoute::Signin)).link_ext()
                         })
                         .render(),
                 ])

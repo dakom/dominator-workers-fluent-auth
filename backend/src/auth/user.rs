@@ -1,36 +1,39 @@
 //use super::durable_objects::token::{AuthTokenAfterValidation, AuthTokenDO, AuthTokenKind, AuthTokenValidateResponse};
 
 use shared::{
-    api::auth::{AuthTokenAfterValidation, AuthTokenKind, AuthTokenValidateResponse},
+    api::auth::{AuthTokenAfterValidation, AuthTokenKind, AuthTokenValidateResponse, UserRole},
     auth::{HEADER_AUTH_TOKEN_ID, HEADER_AUTH_TOKEN_KEY},
     backend::{
         result::{ApiError, ApiResult, AuthError},
         route::{Route, RouteAuthKind},
-    },
+    }, user::UserId,
 };
 use worker::{Env, HttpRequest};
 
 use crate::{
-    config::AUTH_TOKEN_SIGNIN_EXPIRES,
-    db::user::{UserAccount, UserRole},
-    kv::auth::AuthKv,
+    config::AUTH_TOKEN_SIGNIN_EXPIRES_DURATION, db::user::UserAccountDb, kv::auth::AuthKv
 };
 
-pub struct AuthUser {
-    pub account: UserAccount,
+#[allow(unused)]
+pub struct User {
+    pub id: UserId,
+    pub user_token: String,
     pub token_id: String,
+    pub roles: Vec<UserRole>,
 }
 
-impl AuthUser {
+
+
+impl User {
     pub async fn try_new(
         env: &Env,
         req: &HttpRequest,
         route: &Route,
-    ) -> ApiResult<Option<AuthUser>> {
+    ) -> ApiResult<Option<Self>> {
         // early exit or get the auth token
         let user = match route.auth_kind() {
             RouteAuthKind::None | RouteAuthKind::NoAuthCookieSetter => None,
-            auth_kind => match AuthUser::validate(&env, &req, auth_kind).await {
+            auth_kind => match User::validate(&env, &req, auth_kind).await {
                 Ok(user) => Some(user),
                 Err(err) => {
                     tracing::info!("Auth error: {:?}", err);
@@ -48,7 +51,7 @@ impl AuthUser {
         env: &Env,
         req: &HttpRequest,
         auth_kind: RouteAuthKind,
-    ) -> ApiResult<AuthUser> {
+    ) -> ApiResult<Self> {
         // first try and get the token from the header, e.g. for non-browser clients who store the token_id securely
         let mut token_id = req
             .headers()
@@ -113,17 +116,19 @@ impl AuthUser {
             return Err(ApiError::from("missing token key".to_string()));
         }
 
-        // validate the token id and key
+        // validate the token id and key, get the uid and user_token if token is valid
         let AuthTokenValidateResponse { uid, user_token } = AuthKv::validate(
             env,
-            AuthTokenKind::Login,
+            AuthTokenKind::Signin,
             &token_id,
             token_key.to_string(),
-            AuthTokenAfterValidation::ExtendExpiresMs(AUTH_TOKEN_SIGNIN_EXPIRES),
+            AuthTokenAfterValidation::ExtendExpires(*AUTH_TOKEN_SIGNIN_EXPIRES_DURATION),
         )
         .await?;
 
-        let account = UserAccount::load(env, &uid).await?;
+        let account = UserAccountDb::load(env, &uid).await?;
+        let roles = UserAccountDb::load_roles(env, &uid).await?;
+
 
         match auth_kind {
             // no need to handle all the variants here, we've early-exited for non-auth routes
@@ -138,13 +143,18 @@ impl AuthUser {
                 }
 
                 if matches!(auth_kind, RouteAuthKind::Admin) {
-                    if !account.roles.contains(&UserRole::Admin) {
+                    if !roles.contains(&UserRole::Admin) {
                         return Err(ApiError::Auth(AuthError::NotAuthorized));
                     }
                 }
             }
         }
 
-        Ok(AuthUser { account, token_id })
+        Ok(Self{ 
+            id: uid, 
+            token_id, 
+            user_token: account.user_token, 
+            roles 
+        })
     }
 }

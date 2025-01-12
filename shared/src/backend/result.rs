@@ -47,8 +47,8 @@ impl From<&str> for ApiError {
 pub enum AuthError {
     #[error("not authorized")]
     NotAuthorized,
-    #[error("invalid login")]
-    InvalidLogin,
+    #[error("invalid password")]
+    InvalidPassword,
     #[error("email address is empty")]
     EmailEmpty,
     #[error("email needs to be verified")]

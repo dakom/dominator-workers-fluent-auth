@@ -30,7 +30,7 @@ impl Route {
             ["dashboard", dashboard_path @ ..] => Dashboard::try_from_paths(dashboard_path).map(Self::Dashboard)
                 .unwrap_or(Self::NotFound(NotFoundReason::BadUrl)),
             ["register"] => Self::Landing(Landing::Auth(AuthRoute::Register)),
-            ["login"] => Self::Landing(Landing::Auth(AuthRoute::Login)),
+            ["login"] => Self::Landing(Landing::Auth(AuthRoute::Signin)),
             ["terms-of-service"] => Self::TermsOfService,
             ["privacy-policy"] => Self::PrivacyPolicy,
             // these usually aren't visited directly, but can be helpful for debugging
@@ -87,7 +87,7 @@ impl std::fmt::Display for Route {
 impl AuthRoute {
     pub fn try_from_paths(paths: &[&str]) -> Option<Self> {
         match *paths {
-            ["login"] => Some(Self::Login),
+            ["login"] => Some(Self::Signin),
             ["register"] => Some(Self::Register),
             ["verify-email-waiting"] => Some(Self::VerifyEmailWaiting),
             ["verify-email-confirm", oob_token_id, oob_token_key] => Some(Self::VerifyEmailConfirm {
@@ -110,7 +110,7 @@ impl AuthRoute {
 impl std::fmt::Display for AuthRoute {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s: String = match self {
-            Self::Login => "login".to_string(),
+            Self::Signin => "login".to_string(),
             Self::Register => "register".to_string(),
             Self::VerifyEmailWaiting => "verify-email-waiting".to_string(),
             Self::VerifyEmailConfirm { oob_token_id, oob_token_key} => format!("verify-email-confirm/{oob_token_id}/{oob_token_key}"),
@@ -155,7 +155,7 @@ pub enum Landing {
 #[derive(Clone, Debug)]
 pub enum AuthRoute {
     Register,
-    Login,
+    Signin,
     VerifyEmailWaiting,
     VerifyEmailConfirm {
         oob_token_id: String,

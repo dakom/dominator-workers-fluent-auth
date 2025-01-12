@@ -1,6 +1,6 @@
 use base64::Engine;
 use sha2::{Digest, Sha256};
-use shared::{api::auth::{AuthLoginEmail, AuthLoginEmailRequest, AuthLoginResponse, AuthOpenIdConnect, AuthOpenIdConnectRequest, AuthRegisterEmail, AuthRegisterEmailRequest, AuthRegisterEmailResponse, AuthSendResetPasswordAny, AuthSendResetPasswordMe, AuthSendResetPasswordRequestAny, AuthSendVerifyEmail, OpenIdProvider}, backend::result::{ApiError, ApiResult}};
+use shared::{api::auth::{AuthSigninEmail, AuthSigninEmailRequest, AuthSigninResponse, AuthOpenIdConnect, AuthOpenIdConnectRequest, AuthRegisterEmail, AuthRegisterEmailRequest, AuthSendResetPasswordAny, AuthSendResetPasswordMe, AuthSendResetPasswordRequestAny, AuthSendVerifyEmail, OpenIdProvider}, backend::result::{ApiError, ApiResult}};
 use argon2::{
     password_hash::{
         PasswordHasher, SaltString
@@ -18,17 +18,17 @@ pub async fn send_email_validation() -> ApiResult<()> {
 pub(super) async fn register_email(email: &str, password: &str) -> ApiResult<()> {
     let password = hash_password(email, password).map_err(|err| ApiError::Unknown(err.to_string()))?;
 
-    let AuthRegisterEmailResponse{uid, email_verified, auth_key} = AuthRegisterEmail::fetch(AuthRegisterEmailRequest { email: email.to_string(), password }).await?;
+    let AuthSigninResponse{auth_key} = AuthRegisterEmail::fetch(AuthRegisterEmailRequest { email: email.to_string(), password }).await?;
 
-    AUTH.on_login(uid, email_verified, auth_key).await
+    AUTH.on_signin(auth_key).await
 }
 
 pub(super) async fn login_email(email: &str, password: &str) -> ApiResult<()> {
     let password = hash_password(email, password).map_err(|err| ApiError::Unknown(err.to_string()))?;
 
-    let AuthLoginResponse{uid, email_verified, auth_key} = AuthLoginEmail::fetch(AuthLoginEmailRequest{ email: email.to_string(), password }).await?;
+    let AuthSigninResponse{auth_key} = AuthSigninEmail::fetch(AuthSigninEmailRequest{ email: email.to_string(), password }).await?;
 
-    AUTH.on_login(uid, email_verified, auth_key).await
+    AUTH.on_signin(auth_key).await
 }
 
 pub(super) async fn openid_connect(provider: OpenIdProvider) -> ApiResult<()> {

@@ -2,7 +2,7 @@ use dominator::clone;
 use dominator_helpers::futures::AsyncLoader;
 use futures_signals::signal::Mutable;
 use shared::{
-    api::auth::{AuthCheck, AuthSignout, AuthSignoutRequest},
+    api::auth::{AuthCheck, AuthSignout, AuthSignoutRequest, UserRole},
     backend::result::ApiResult,
     user::UserId,
 };
@@ -75,7 +75,7 @@ impl Auth {
         self.token_key.read().unwrap().clone()
     }
 
-    pub async fn on_login(&self, uid: UserId, email_verified: bool, auth_key: String) -> ApiResult<()> {
+    pub async fn on_signin(&self, auth_key: String) -> ApiResult<()> {
         web_sys::window()
             .unwrap_ext()
             .local_storage()
@@ -83,15 +83,11 @@ impl Auth {
             .unwrap_ext()
             .set_item(CONFIG.auth_login_key_storage_name, &auth_key)
             .unwrap_ext();
+
         *self.uid.write().unwrap() = Some(uid);
         *self.token_key.write().unwrap() = Some(auth_key);
 
-        if !email_verified {
-            send_email_validation().await?;
-            self.phase.set_neq(AuthPhase::EmailNotVerified);
-        } else {
-            self.phase.set_neq(AuthPhase::Authenticated);
-        }
+        self.check().await;
 
         Ok(())
     }
@@ -101,7 +97,11 @@ impl Auth {
         match res {
             Ok(res) => {
                 *self.uid.write().unwrap() = Some(res.uid);
-                self.phase.set_neq(AuthPhase::Authenticated);
+                if !res.roles.contains(&UserRole::EmailVerified) {
+                    self.phase.set_neq(AuthPhase::EmailNotVerified);
+                } else {
+                    self.phase.set_neq(AuthPhase::Authenticated);
+                }
             }
             Err(err) => {
                 tracing::error!("auth check failed: {:?}", err);

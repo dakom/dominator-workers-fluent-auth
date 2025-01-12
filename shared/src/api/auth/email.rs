@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    api::{ApiBoth, ApiEmpty, ApiReq}, backend::route::{AuthRoute, Route}, user::UserId
+    api::{ApiBoth, ApiEmpty, ApiReq}, backend::route::{AuthRoute, Route}
 };
 use http::Method;
 
-use super::AuthLoginResponse;
+use super::AuthSigninResponse;
 
 //// Register - via email/pw
 pub struct AuthRegisterEmail {}
@@ -15,7 +15,7 @@ impl ApiBoth for AuthRegisterEmail {
     const METHOD: Method = Method::POST;
 
     type Req = AuthRegisterEmailRequest;
-    type Res = AuthRegisterEmailResponse;
+    type Res = AuthSigninResponse;
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -24,27 +24,21 @@ pub struct AuthRegisterEmailRequest {
     pub password: String
 }
 
-#[derive(Deserialize, Serialize, Debug)]
-pub struct AuthRegisterEmailResponse {
-    pub uid: UserId,
-    pub email_verified: bool,
-    pub auth_key: String,
-}
 
 //// Signin
-pub struct AuthLoginEmail { }
+pub struct AuthSigninEmail { }
 
-impl ApiBoth for AuthLoginEmail {
-    const ROUTE:Route = Route::Auth(AuthRoute::LoginEmail);
+impl ApiBoth for AuthSigninEmail {
+    const ROUTE:Route = Route::Auth(AuthRoute::SigninEmail);
 
-    type Req = AuthLoginEmailRequest;
-    type Res = AuthLoginResponse;
+    type Req = AuthSigninEmailRequest;
+    type Res = AuthSigninResponse;
 
     const METHOD: Method = Method::POST;
 }
 
 #[derive(Deserialize, Serialize, Debug)]
-pub struct AuthLoginEmailRequest {
+pub struct AuthSigninEmailRequest {
     pub email: String,
     pub password: String,
 }

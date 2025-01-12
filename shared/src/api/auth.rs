@@ -19,9 +19,7 @@ use http::Method;
 use super::{ApiReq, ApiRes};
 
 #[derive(Deserialize, Serialize, Debug)]
-pub struct AuthLoginResponse {
-    pub uid: UserId,
-    pub email_verified: bool,
+pub struct AuthSigninResponse {
     pub auth_key: String,
 }
 
@@ -55,4 +53,28 @@ impl ApiRes for AuthCheck {
 #[derive(Deserialize, Serialize, Debug)]
 pub struct AuthCheckResponse {
     pub uid: UserId,
+    pub roles: Vec<UserRole>,
+}
+
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
+pub enum UserRole {
+    EmailVerified,
+    Admin
+}
+
+impl From<u8> for UserRole {
+    fn from(v: u8) -> Self {
+        match v {
+            0 => Self::EmailVerified,
+            1 => Self::Admin,
+            _ => panic!("invalid user role"),
+        }
+    }
+}
+
+impl From<UserRole> for u8 {
+    fn from(v: UserRole) -> Self {
+        v as u8
+    }
 }

@@ -242,7 +242,7 @@ impl Register {
                             .child(Button::new()
                                 .with_text(get_text!("landing-login-button"))
                                 .with_style(ButtonStyle::Outline)
-                                .with_link(Route::Landing(Landing::Auth(AuthRoute::Login)).link_ext())
+                                .with_link(Route::Landing(Landing::Auth(AuthRoute::Signin)).link_ext())
                                 .render()
                             )
                         }))

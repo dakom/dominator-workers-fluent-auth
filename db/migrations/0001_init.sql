@@ -1,18 +1,30 @@
 -- Migration number: 0001 	 2024-11-26T12:24:01.929Z
 CREATE TABLE user_account (
     id TEXT PRIMARY KEY,
-	user_token TEXT NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+	user_token TEXT NOT NULL
 ) WITHOUT ROWID;
 
-CREATE TABLE omi_account (
-    id TEXT PRIMARY KEY,
+
+CREATE TABLE user_account_email (
+    email TEXT PRIMARY KEY,
+    password TEXT NOT NULL,
     user_id TEXT NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES user_account(id)
 ) WITHOUT ROWID;
 
-CREATE TABLE telegram_account (
-    id TEXT PRIMARY KEY,
+CREATE INDEX IF NOT EXISTS idx_email_user_id ON user_account_email(user_id);
+
+CREATE TABLE user_role_info (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT
+);
+
+CREATE TABLE user_roles (
     user_id TEXT NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-) WITHOUT ROWID;
+    role_id INTEGER NOT NULL,
+    PRIMARY KEY (user_id, role_id),
+    FOREIGN KEY (user_id) REFERENCES user_account(id),
+    FOREIGN KEY (role_id) REFERENCES user_role_info(id)
+);

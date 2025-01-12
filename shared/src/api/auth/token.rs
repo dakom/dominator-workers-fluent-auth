@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use serde::{Deserialize, Serialize};
 use crate::user::UserId;
 
@@ -5,7 +7,7 @@ use crate::user::UserId;
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum AuthTokenKind {
-    Login,
+    Signin,
 }
 
 impl TryFrom<String> for AuthTokenKind {
@@ -13,7 +15,7 @@ impl TryFrom<String> for AuthTokenKind {
 
     fn try_from(value: String) -> std::result::Result<Self, Self::Error> {
         match value.to_lowercase().as_str() {
-            "login" => Ok(Self::Login),
+            "login" => Ok(Self::Signin),
             _ => Err("invalid kind"),
         }
     }
@@ -22,7 +24,7 @@ impl TryFrom<String> for AuthTokenKind {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum AuthTokenAfterValidation {
     Delete,
-    ExtendExpiresMs(u64),
+    ExtendExpires(Duration),
 }
 
 #[derive(Serialize, Deserialize, Debug)]

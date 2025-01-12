@@ -15,7 +15,7 @@ pub enum AuthRoute {
     SendPasswordResetAny,
     SendPasswordResetMe,
     ConfirmPasswordReset,
-    LoginEmail,
+    SigninEmail,
     Check,
     Signout,
     OpenIdConnect,
@@ -68,7 +68,7 @@ impl Route {
                 AuthRoute::SendPasswordResetMe => RouteAuthKind::Full,
                 // these just need to set the cookie, no auth checks
                 AuthRoute::RegisterEmail => RouteAuthKind::NoAuthCookieSetter,
-                AuthRoute::LoginEmail => RouteAuthKind::NoAuthCookieSetter,
+                AuthRoute::SigninEmail => RouteAuthKind::NoAuthCookieSetter,
                 // signout is allowed even if we've already "signed out everywhere"
                 AuthRoute::Signout => RouteAuthKind::PartialAuthTokenOnly,
                 // sending an email validation requires that the user is fully signed in (i.e. also hasn't been signed out elsewhere)
@@ -108,7 +108,7 @@ impl AuthRoute {
             ["openid-finalize-query"] => Some(Self::OpenIdFinalizeQuery),
             ["check"] => Some(Self::Check),
             ["signout"] => Some(Self::Signout),
-            ["login-email"] => Some(Self::LoginEmail),
+            ["signin-email"] => Some(Self::SigninEmail),
             _ => None,
         }
     }
@@ -144,7 +144,7 @@ impl std::fmt::Display for AuthRoute {
             Self::RegisterEmail => "register-email".to_string(),
             Self::Signout => "signout".to_string(),
             Self::Check => "check".to_string(),
-            Self::LoginEmail => "login-email".to_string(),
+            Self::SigninEmail => "signin-email".to_string(),
             Self::SendVerifyEmail => "send-verify-email".to_string(),
             Self::ConfirmEmailValidation => "confirm-email-validation".to_string(),
             Self::SendPasswordResetAny => "send-password-reset-any".to_string(),

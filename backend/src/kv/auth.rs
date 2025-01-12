@@ -1,5 +1,7 @@
+use std::time::Duration;
+
 use base64::Engine;
-use rand::Rng;
+use rand::{rngs::OsRng, Rng};
 use serde::{Deserialize, Serialize};
 use shared::{
     api::auth::{
@@ -24,18 +26,18 @@ impl AuthKv {
         kind: AuthTokenKind,
         uid: UserId,
         user_token: String,
-        expires_ms: u64,
+        expires: Duration,
     ) -> ApiResult<AuthTokenCreateResponse> {
         let id = Uuid::now_v7().as_simple().to_string();
         let key = base64::engine::general_purpose::URL_SAFE_NO_PAD
-            .encode(&rand::thread_rng().gen::<[u8; AUTH_TOKEN_KEY_LENGTH]>());
+            .encode(&OsRng.gen::<[u8; AUTH_TOKEN_KEY_LENGTH]>());
 
-        let data = AuthLoginTokenData {
+        let data = AuthSigninTokenData {
             uid,
             kind,
             user_token,
             key: key.clone(),
-            expires_at: Date::now().as_millis() + expires_ms,
+            expires_at: Date::now().as_millis() + expires.as_millis() as u64,
         };
 
         put_kv(env, KV_BINDING_AUTH_TOKEN_SIGNIN, &id, &data).await?;
@@ -54,7 +56,7 @@ impl AuthKv {
         key: String,
         after: AuthTokenAfterValidation,
     ) -> ApiResult<AuthTokenValidateResponse> {
-        let mut token: AuthLoginTokenData =
+        let mut token: AuthSigninTokenData =
             get_kv_json(env, &KV_BINDING_AUTH_TOKEN_SIGNIN, id).await?;
 
         if kind != token.kind {
@@ -74,8 +76,8 @@ impl AuthKv {
             AuthTokenAfterValidation::Delete => {
                 delete_kv(env, KV_BINDING_AUTH_TOKEN_SIGNIN, id).await?;
             }
-            AuthTokenAfterValidation::ExtendExpiresMs(expires_ms) => {
-                token.expires_at = Date::now().as_millis() + expires_ms;
+            AuthTokenAfterValidation::ExtendExpires(expires) => {
+                token.expires_at = Date::now().as_millis() + expires.as_millis() as u64;
                 put_kv(env, KV_BINDING_AUTH_TOKEN_SIGNIN, &id, &token).await?;
             }
         }
@@ -88,7 +90,7 @@ impl AuthKv {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct AuthLoginTokenData {
+struct AuthSigninTokenData {
     uid: UserId,
     kind: AuthTokenKind,
     user_token: String,
