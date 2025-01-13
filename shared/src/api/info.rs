@@ -2,9 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::backend::route::Route;
 
-use super::{
-    ApiRes, Method,
-};
+use super::{ApiRes, Method};
 
 pub struct ServerInfo {}
 

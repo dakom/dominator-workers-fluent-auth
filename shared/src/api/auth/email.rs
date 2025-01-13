@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    api::{ApiBoth, ApiEmpty, ApiReq}, backend::route::{AuthRoute, Route}
+    api::{ApiBoth, ApiEmpty, ApiReq},
+    backend::route::{AuthRoute, Route},
 };
 use http::Method;
 
@@ -21,15 +22,14 @@ impl ApiBoth for AuthRegisterEmail {
 #[derive(Deserialize, Serialize, Debug)]
 pub struct AuthRegisterEmailRequest {
     pub email: String,
-    pub password: String
+    pub password: String,
 }
 
-
 //// Signin
-pub struct AuthSigninEmail { }
+pub struct AuthSigninEmail {}
 
 impl ApiBoth for AuthSigninEmail {
-    const ROUTE:Route = Route::Auth(AuthRoute::SigninEmail);
+    const ROUTE: Route = Route::Auth(AuthRoute::SigninEmail);
 
     type Req = AuthSigninEmailRequest;
     type Res = AuthSigninResponse;
@@ -52,7 +52,7 @@ impl ApiEmpty for AuthSendVerifyEmail {
 }
 
 /// Confirm email validation
-pub struct AuthConfirmVerifyEmail { }
+pub struct AuthConfirmVerifyEmail {}
 impl ApiReq for AuthConfirmVerifyEmail {
     const ROUTE: Route = Route::Auth(AuthRoute::ConfirmEmailValidation);
 

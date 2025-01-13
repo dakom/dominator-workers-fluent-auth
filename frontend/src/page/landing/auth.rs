@@ -1,10 +1,10 @@
-mod register;
-mod login;
 pub mod actions;
+mod login;
+mod register;
 
 use crate::prelude::*;
-use register::Register;
 use login::Signin;
+use register::Register;
 
 pub fn render(auth_route: AuthRoute) -> Dom {
     match auth_route {
@@ -12,6 +12,6 @@ pub fn render(auth_route: AuthRoute) -> Dom {
         AuthRoute::Signin => Signin::new().render(),
         _ => html!("div", {
             .text("404")
-        })
+        }),
     }
 }

@@ -1,16 +1,26 @@
 use crate::{
-    any_to_json_response, api_ext::*, config::AUTH_TOKEN_SIGNIN_EXPIRES_DURATION, db::user::{UserAccountDb, UserEmailDb, UserInsertKind}, empty_response, kv::auth::AuthKv, utils::crypto::{hash_password, PasswordSalt}, ApiContext
+    any_to_json_response,
+    api_ext::*,
+    config::AUTH_TOKEN_SIGNIN_EXPIRES_DURATION,
+    db::user::{UserAccountDb, UserEmailDb, UserInsertKind},
+    empty_response,
+    kv::auth::AuthKv,
+    utils::crypto::{hash_password, PasswordSalt},
+    ApiContext,
 };
 use async_trait::async_trait;
 use auth::{
-    AuthCheck, AuthCheckResponse, AuthRegisterEmail, AuthRegisterEmailRequest, AuthSigninEmail, AuthSigninEmailRequest, AuthSigninResponse, AuthSignout, AuthSignoutRequest, AuthTokenCreateResponse, AuthTokenKind
+    AuthCheck, AuthCheckResponse, AuthRegisterEmail, AuthRegisterEmailRequest, AuthSigninEmail,
+    AuthSigninEmailRequest, AuthSigninResponse, AuthSignout, AuthSignoutRequest,
+    AuthTokenCreateResponse, AuthTokenKind,
 };
 use shared::{
     api::*,
     auth::HEADER_AUTH_TOKEN_ID,
-    backend::result::{ApiError, ApiResult, AuthError}, user::UserId,
+    backend::result::{ApiError, ApiResult, AuthError},
+    user::UserId,
 };
-use worker::{HttpRequest, HttpResponse};
+use worker::{console_log, HttpRequest, HttpResponse};
 
 // Register
 #[async_trait(?Send)]
@@ -22,11 +32,7 @@ impl ApiBothWithExtraExt for AuthRegisterEmail {
     async fn handle(
         ctx: &ApiContext<AuthRegisterEmailRequest>,
     ) -> ApiResult<(AuthSigninResponse, AuthTokenCreateResponse)> {
-        let AuthRegisterEmailRequest {
-            email,
-            password
-        } = &ctx.req;
-
+        let AuthRegisterEmailRequest { email, password } = &ctx.req;
 
         if UserEmailDb::exists(&ctx.env, &email).await? {
             return Err(ApiError::Auth(AuthError::EmailAlreadyExists));
@@ -37,8 +43,17 @@ impl ApiBothWithExtraExt for AuthRegisterEmail {
         // Register in database
         let uid = UserId::new(uuid::Uuid::now_v7());
         let user_token = uuid::Uuid::now_v7().as_simple().to_string();
-        UserAccountDb::insert(&ctx.env, &uid, &user_token, UserInsertKind::EmailPw { email, password: &password }, Vec::new()).await?;
-
+        UserAccountDb::insert(
+            &ctx.env,
+            &uid,
+            &user_token,
+            UserInsertKind::EmailPw {
+                email,
+                password: &password,
+            },
+            Vec::new(),
+        )
+        .await?;
 
         // Sign user in
         let auth_token = AuthKv::create(
@@ -51,7 +66,7 @@ impl ApiBothWithExtraExt for AuthRegisterEmail {
         .await?;
         let auth_key = auth_token.key.clone();
 
-        Ok((AuthSigninResponse{ auth_key}, auth_token))
+        Ok((AuthSigninResponse { auth_key }, auth_token))
     }
 
     async fn response(
@@ -77,16 +92,19 @@ impl ApiBothWithExtraExt for AuthSigninEmail {
     async fn handle(
         ctx: &ApiContext<AuthSigninEmailRequest>,
     ) -> ApiResult<(AuthSigninResponse, AuthTokenCreateResponse)> {
-        let AuthSigninEmailRequest {
-            email,
-            password
-        } = &ctx.req;
+        let AuthSigninEmailRequest { email, password } = &ctx.req;
 
         let user_email_account = UserEmailDb::load(&ctx.env, &email).await?;
 
-        let password = hash_password(&password, PasswordSalt::Recover)?;
+        let password = hash_password(
+            &password,
+            PasswordSalt::Recover {
+                password_hash: &user_email_account.password,
+            },
+        )?;
 
         if user_email_account.password != password {
+            console_log!("{} != {}", user_email_account.password, password);
             return Err(ApiError::Auth(AuthError::InvalidPassword));
         }
 
@@ -104,12 +122,7 @@ impl ApiBothWithExtraExt for AuthSigninEmail {
         .await?;
         let auth_key = auth_token.key.clone();
 
-        Ok((
-            AuthSigninResponse {
-                auth_key,
-            },
-            auth_token,
-        ))
+        Ok((AuthSigninResponse { auth_key }, auth_token))
     }
 
     async fn response(

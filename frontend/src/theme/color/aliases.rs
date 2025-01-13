@@ -12,7 +12,7 @@ pub enum ColorBackground {
     ButtonDisabled,
     ButtonRed,
     ButtonRedHover,
-    Initial
+    Initial,
 }
 
 impl ColorBackground {
@@ -246,7 +246,6 @@ impl ColorText {
             }
         });
 
-
         match self {
             Self::ButtonPrimary => &*BUTTON_PRIMARY,
             Self::Header => &*HEADER,
@@ -363,13 +362,11 @@ impl ColorBorder {
             }
         });
 
-
         static BUTTON_DISABLED: LazyLock<String> = LazyLock::new(|| {
             class! {
               .style("border-color", ColorBorder::ButtonDisabled.value())
             }
         });
-
 
         static BUTTON_OUTLINE_PRIMARY: LazyLock<String> = LazyLock::new(|| {
             class! {
@@ -414,7 +411,6 @@ impl ColorBorder {
             Self::ButtonOutlinePrimaryHover => &*BUTTON_OUTLINE_PRIMARY_HOVER,
             Self::ButtonOutlineRed => &*BUTTON_OUTLINE_RED,
             Self::ButtonOutlineRedHover => &*BUTTON_OUTLINE_RED_HOVER,
-
         }
     }
 }

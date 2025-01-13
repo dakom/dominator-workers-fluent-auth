@@ -41,7 +41,10 @@ where
             RouteAuthKind::NoAuthCookieSetter => {
                 fetch_with_headers_and_data(&url, method, true, &noauth_headers(), Some(data)).await
             }
-            RouteAuthKind::Admin | RouteAuthKind::Full | RouteAuthKind::PartialAuthTokenOnly | RouteAuthKind::PartialAuthAndUserTokenOnly => {
+            RouteAuthKind::Admin
+            | RouteAuthKind::Full
+            | RouteAuthKind::PartialAuthTokenOnly
+            | RouteAuthKind::PartialAuthAndUserTokenOnly => {
                 fetch_with_headers_and_data(&url, method, true, &auth_headers()?, Some(data)).await
             }
         };
@@ -73,7 +76,10 @@ where
             RouteAuthKind::NoAuthCookieSetter => {
                 fetch_with_headers_and_data(&url, method, true, &noauth_headers(), Some(data)).await
             }
-            RouteAuthKind::Admin | RouteAuthKind::Full | RouteAuthKind::PartialAuthTokenOnly | RouteAuthKind::PartialAuthAndUserTokenOnly => {
+            RouteAuthKind::Admin
+            | RouteAuthKind::Full
+            | RouteAuthKind::PartialAuthTokenOnly
+            | RouteAuthKind::PartialAuthAndUserTokenOnly => {
                 fetch_with_headers_and_data(&url, method, true, &auth_headers()?, Some(data)).await
             }
         };
@@ -105,7 +111,10 @@ where
             RouteAuthKind::NoAuthCookieSetter => {
                 fetch_with_headers(&url, &method, true, &noauth_headers()).await
             }
-            RouteAuthKind::Admin | RouteAuthKind::Full | RouteAuthKind::PartialAuthTokenOnly | RouteAuthKind::PartialAuthAndUserTokenOnly => {
+            RouteAuthKind::Admin
+            | RouteAuthKind::Full
+            | RouteAuthKind::PartialAuthTokenOnly
+            | RouteAuthKind::PartialAuthAndUserTokenOnly => {
                 fetch_with_headers(&url, &method, true, &auth_headers()?).await
             }
         };
@@ -134,7 +143,10 @@ where
             RouteAuthKind::NoAuthCookieSetter => {
                 fetch_with_headers(&url, method, true, &noauth_headers()).await
             }
-            RouteAuthKind::Admin | RouteAuthKind::Full | RouteAuthKind::PartialAuthTokenOnly | RouteAuthKind::PartialAuthAndUserTokenOnly => {
+            RouteAuthKind::Admin
+            | RouteAuthKind::Full
+            | RouteAuthKind::PartialAuthTokenOnly
+            | RouteAuthKind::PartialAuthAndUserTokenOnly => {
                 fetch_with_headers(&url, method, true, &auth_headers()?).await
             }
         };

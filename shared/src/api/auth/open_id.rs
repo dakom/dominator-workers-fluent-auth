@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    api::{ApiBoth, ApiEmptyDynRoute}, backend::route::{AuthRoute, Route}, user::UserId
+    api::{ApiBoth, ApiEmptyDynRoute},
+    backend::route::{AuthRoute, Route},
+    user::UserId,
 };
 use http::Method;
 
@@ -38,9 +40,8 @@ impl ApiEmptyDynRoute for AuthOpenIdAccessTokenHook {
     const METHOD: Method = Method::POST;
 }
 
-
 /// OpenId Finalize Exec
-pub struct AuthOpenIdFinalizeExec { }
+pub struct AuthOpenIdFinalizeExec {}
 impl ApiBoth for AuthOpenIdFinalizeExec {
     const ROUTE: Route = Route::Auth(AuthRoute::OpenIdFinalizeExec);
 
@@ -54,17 +55,17 @@ impl ApiBoth for AuthOpenIdFinalizeExec {
 pub struct AuthOpenIdFinalizeRequest {
     pub session_id: String,
     pub session_key: String,
-} 
+}
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct AuthOpenIdFinalizeExecResponse {
     pub uid: UserId,
     pub email_verified: bool,
     pub auth_key: String,
-} 
+}
 
 /// OpenId Finalize Exec
-pub struct AuthOpenIdFinalizeQuery { }
+pub struct AuthOpenIdFinalizeQuery {}
 impl ApiBoth for AuthOpenIdFinalizeQuery {
     const ROUTE: Route = Route::Auth(AuthRoute::OpenIdFinalizeQuery);
 
@@ -78,13 +79,12 @@ impl ApiBoth for AuthOpenIdFinalizeQuery {
 pub struct AuthOpenIdFinalizeQueryResponse {
     pub email: String,
     pub user_exists: bool,
-} 
-
+}
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq)]
 pub enum OpenIdProvider {
     Google,
-    Facebook
+    Facebook,
 }
 
 impl OpenIdProvider {
@@ -99,7 +99,7 @@ impl OpenIdProvider {
         match s {
             "google" => Some(Self::Google),
             "facebook" => Some(Self::Facebook),
-            _ => None
+            _ => None,
         }
     }
 }

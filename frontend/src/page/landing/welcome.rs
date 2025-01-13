@@ -1,11 +1,10 @@
 use crate::{atoms::buttons::Button, page::landing::Landing, prelude::*};
 
-pub struct Welcome {
-}
+pub struct Welcome {}
 
 impl Welcome {
     pub fn new() -> Arc<Self> {
-        Arc::new(Self{})
+        Arc::new(Self {})
     }
     pub fn render(self: Arc<Self>) -> Dom {
         static CLASS: LazyLock<String> = LazyLock::new(|| {

@@ -26,7 +26,7 @@ pub enum AuthRoute {
 
 #[derive(Debug, Clone)]
 pub enum AdminRoute {
-    Placeholder
+    Placeholder,
 }
 
 impl Route {
@@ -103,7 +103,9 @@ impl AuthRoute {
             ["send-password-reset-me"] => Some(Self::SendPasswordResetMe),
             ["confirm-password-reset"] => Some(Self::ConfirmPasswordReset),
             ["openid-connect"] => Some(Self::OpenIdConnect),
-            ["openid-access-token-hook", provider] => OpenIdProvider::try_from_str(provider).map(Self::OpenIdAccessTokenHook),
+            ["openid-access-token-hook", provider] => {
+                OpenIdProvider::try_from_str(provider).map(Self::OpenIdAccessTokenHook)
+            }
             ["openid-finalize-exec"] => Some(Self::OpenIdFinalizeExec),
             ["openid-finalize-query"] => Some(Self::OpenIdFinalizeQuery),
             ["check"] => Some(Self::Check),
@@ -148,10 +150,12 @@ impl std::fmt::Display for AuthRoute {
             Self::SendVerifyEmail => "send-verify-email".to_string(),
             Self::ConfirmEmailValidation => "confirm-email-validation".to_string(),
             Self::SendPasswordResetAny => "send-password-reset-any".to_string(),
-            Self::SendPasswordResetMe => "send-password-reset-me".to_string(), 
-            Self::ConfirmPasswordReset => "confirm-password-reset".to_string(), 
+            Self::SendPasswordResetMe => "send-password-reset-me".to_string(),
+            Self::ConfirmPasswordReset => "confirm-password-reset".to_string(),
             Self::OpenIdConnect => "openid-connect".to_string(),
-            Self::OpenIdAccessTokenHook(provider) => format!("openid-access-token-hook/{}", provider.as_str()),
+            Self::OpenIdAccessTokenHook(provider) => {
+                format!("openid-access-token-hook/{}", provider.as_str())
+            }
             Self::OpenIdFinalizeExec => "openid-finalize-exec".to_string(),
             Self::OpenIdFinalizeQuery => "openid-finalize-query".to_string(),
         };

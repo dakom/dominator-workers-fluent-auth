@@ -55,36 +55,23 @@ impl D1ResultExt for D1Result {
     }
 }
 
-pub async fn put_kv(
+pub async fn put_kv_json(
     env: &Env,
     namespace: &str,
     key: &str,
-    value: impl ToRawKvValue,
+    value: impl Serialize,
 ) -> ApiResult<()> {
+    // technically, we could maybe take a into<RawKvValue> here, but
+    // that makes it harder to debug and cloudflare wants to receive it as a JsValue, not impl Serialize
+    let bytes = serde_json::to_vec(&value).map_err(|e| ApiError::Kv(e.to_string()))?;
+
     env.kv(namespace)
         .map_err(|e| ApiError::Kv(e.to_string()))?
-        .put(key, value)
+        .put_bytes(key, &bytes)
         .map_err(|e| ApiError::Kv(e.to_string()))?
         .execute()
         .await
         .map_err(|e| ApiError::Kv(e.to_string()))
-}
-
-#[allow(dead_code)]
-pub async fn try_get_kv_string(env: &Env, namespace: &str, key: &str) -> ApiResult<Option<String>> {
-    env.kv(namespace)
-        .map_err(|e| ApiError::Kv(e.to_string()))?
-        .get(key)
-        .text()
-        .await
-        .map_err(|e| ApiError::Kv(e.to_string()))
-}
-
-#[allow(dead_code)]
-pub async fn get_kv_string(env: &Env, namespace: &str, key: &str) -> ApiResult<String> {
-    try_get_kv_string(env, namespace, key)
-        .await?
-        .ok_or_else(|| ApiError::Kv(format!("missing kv key {} in namespace {}", key, namespace)))
 }
 
 pub async fn try_get_kv_json<D: DeserializeOwned>(
@@ -92,12 +79,17 @@ pub async fn try_get_kv_json<D: DeserializeOwned>(
     namespace: &str,
     key: &str,
 ) -> ApiResult<Option<D>> {
-    env.kv(namespace)
+    let bytes = env
+        .kv(namespace)
         .map_err(|e| ApiError::Kv(e.to_string()))?
         .get(key)
-        .json()
+        .bytes()
         .await
-        .map_err(|e| ApiError::Kv(e.to_string()))
+        .map_err(|e| ApiError::Kv(e.to_string()))?;
+
+    bytes
+        .map(|bytes| serde_json::from_slice(&bytes).map_err(|e| ApiError::Kv(e.to_string())))
+        .transpose()
 }
 
 pub async fn get_kv_json<D: DeserializeOwned>(

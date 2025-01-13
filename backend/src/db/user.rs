@@ -8,11 +8,8 @@ pub struct UserAccountDb {
     pub user_token: String,
 }
 
-pub enum UserInsertKind <'a> {
-    EmailPw {
-        email: &'a str,
-        password: &'a str,
-    }
+pub enum UserInsertKind<'a> {
+    EmailPw { email: &'a str, password: &'a str },
 }
 
 impl UserAccountDb {
@@ -44,48 +41,44 @@ impl UserAccountDb {
         Ok(exists)
     }
 
-    pub async fn insert<'a>(env: &Env, id: &UserId, user_token: &str, kind: UserInsertKind<'a>, roles: Vec<UserRole>) -> ApiResult<()> {
+    pub async fn insert<'a>(
+        env: &Env,
+        id: &UserId,
+        user_token: &str,
+        kind: UserInsertKind<'a>,
+        roles: Vec<UserRole>,
+    ) -> ApiResult<()> {
         let d1 = get_d1(env)?;
 
         let mut statements = vec![
-            d1
-                .prepare(format!(
-                    "INSERT INTO {} (id, user_token) VALUES (?1, ?2)",
-                    DB_TABLE.user_account
-                ))
-                .bind(&[id.into(), user_token.into()])?,
+            d1.prepare(format!(
+                "INSERT INTO {} (id, user_token) VALUES (?1, ?2)",
+                DB_TABLE.user_account
+            ))
+            .bind(&[id.into(), user_token.into()])?,
             match kind {
-                UserInsertKind::EmailPw { email, password } => {
-                    d1
-                        .prepare(format!(
-                            "INSERT INTO {} (email, password, user_id) VALUES (?1, ?2, ?3)",
-                            DB_TABLE.user_account_email
-                        ))
-                        .bind(&[
-                            email.into(),
-                            password.into(),
-                            id.into(),
-                        ])?
-                }
+                UserInsertKind::EmailPw { email, password } => d1
+                    .prepare(format!(
+                        "INSERT INTO {} (email, password, user_id) VALUES (?1, ?2, ?3)",
+                        DB_TABLE.user_account_email
+                    ))
+                    .bind(&[email.into(), password.into(), id.into()])?,
             },
         ];
 
         if !roles.is_empty() {
             for role in roles {
-                statements.push(d1.prepare(format!(
-                    "INSERT INTO {} (id, role) VALUES (?1, ?2)",
-                    DB_TABLE.user_roles
-                ))
-                .bind(&[
-                    id.into(),
-                    u8::from(role).into(),
-                ])?);
+                statements.push(
+                    d1.prepare(format!(
+                        "INSERT INTO {} (id, role) VALUES (?1, ?2)",
+                        DB_TABLE.user_roles
+                    ))
+                    .bind(&[id.into(), u8::from(role).into()])?,
+                );
             }
         }
 
-        let res = d1
-            .batch(statements)
-            .await?;
+        let res = d1.batch(statements).await?;
 
         for r in res {
             if let Some(err) = r.error() {
@@ -124,14 +117,9 @@ impl UserAccountDb {
             .await?
             .results::<RoleDb>()?;
 
-        let res = res.into_iter()
-            .map(|r| {
-                UserRole::from(r.role_id)
-            })
-            .collect();
+        let res = res.into_iter().map(|r| UserRole::from(r.role_id)).collect();
 
         Ok(res)
-
     }
 }
 

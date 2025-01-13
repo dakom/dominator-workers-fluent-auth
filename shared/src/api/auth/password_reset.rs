@@ -1,12 +1,14 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    api::{ApiBoth, ApiEmpty, ApiReq}, backend::route::{AuthRoute, Route}, user::UserId
+    api::{ApiBoth, ApiEmpty, ApiReq},
+    backend::route::{AuthRoute, Route},
+    user::UserId,
 };
 use http::Method;
 
 /// Send password reset
-pub struct AuthSendResetPasswordAny { }
+pub struct AuthSendResetPasswordAny {}
 impl ApiReq for AuthSendResetPasswordAny {
     const ROUTE: Route = Route::Auth(AuthRoute::SendPasswordResetAny);
 
@@ -16,11 +18,11 @@ impl ApiReq for AuthSendResetPasswordAny {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
-pub struct AuthSendResetPasswordRequestAny { 
-    pub email: String
+pub struct AuthSendResetPasswordRequestAny {
+    pub email: String,
 }
 
-pub struct AuthSendResetPasswordMe { }
+pub struct AuthSendResetPasswordMe {}
 impl ApiEmpty for AuthSendResetPasswordMe {
     const ROUTE: Route = Route::Auth(AuthRoute::SendPasswordResetMe);
 
@@ -28,7 +30,7 @@ impl ApiEmpty for AuthSendResetPasswordMe {
 }
 
 /// Confirm password reset
-pub struct AuthConfirmResetPassword { }
+pub struct AuthConfirmResetPassword {}
 impl ApiBoth for AuthConfirmResetPassword {
     const ROUTE: Route = Route::Auth(AuthRoute::ConfirmPasswordReset);
 

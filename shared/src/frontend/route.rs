@@ -25,9 +25,11 @@ impl Route {
         match paths {
             [""] => Self::Landing(Landing::Welcome),
             ["no-auth"] => Self::NotFound(NotFoundReason::NoAuth),
-            ["auth", auth_path @ ..] => AuthRoute::try_from_paths(auth_path).map(|auth| Self::Landing(Landing::Auth(auth)))
+            ["auth", auth_path @ ..] => AuthRoute::try_from_paths(auth_path)
+                .map(|auth| Self::Landing(Landing::Auth(auth)))
                 .unwrap_or(Self::NotFound(NotFoundReason::BadUrl)),
-            ["dashboard", dashboard_path @ ..] => Dashboard::try_from_paths(dashboard_path).map(Self::Dashboard)
+            ["dashboard", dashboard_path @ ..] => Dashboard::try_from_paths(dashboard_path)
+                .map(Self::Dashboard)
                 .unwrap_or(Self::NotFound(NotFoundReason::BadUrl)),
             ["register"] => Self::Landing(Landing::Auth(AuthRoute::Register)),
             ["login"] => Self::Landing(Landing::Auth(AuthRoute::Signin)),
@@ -39,7 +41,6 @@ impl Route {
     }
 
     pub fn link_url(&self, _domain: &str, root_path: &str) -> String {
-
         let s = format!("{}/{}", root_path, self.to_string());
 
         // let s = if root_path.is_empty() {
@@ -72,7 +73,7 @@ impl std::fmt::Display for Route {
             },
             Route::Dashboard(dashboard_route) => {
                 format!("dashboard/{}", dashboard_route)
-            },
+            }
             Route::NotFound(reason) => match reason {
                 NotFoundReason::BadUrl => "404".to_string(),
                 NotFoundReason::NoAuth => "no-auth".to_string(),
@@ -90,14 +91,18 @@ impl AuthRoute {
             ["login"] => Some(Self::Signin),
             ["register"] => Some(Self::Register),
             ["verify-email-waiting"] => Some(Self::VerifyEmailWaiting),
-            ["verify-email-confirm", oob_token_id, oob_token_key] => Some(Self::VerifyEmailConfirm {
-                oob_token_id: oob_token_id.to_string(),
-                oob_token_key: oob_token_key.to_string(),
-            }),
-            ["reset-password-confirm", oob_token_id, oob_token_key] => Some(Self::PasswordResetConfirm {
-                oob_token_id: oob_token_id.to_string(),
-                oob_token_key: oob_token_key.to_string(),
-            }),
+            ["verify-email-confirm", oob_token_id, oob_token_key] => {
+                Some(Self::VerifyEmailConfirm {
+                    oob_token_id: oob_token_id.to_string(),
+                    oob_token_key: oob_token_key.to_string(),
+                })
+            }
+            ["reset-password-confirm", oob_token_id, oob_token_key] => {
+                Some(Self::PasswordResetConfirm {
+                    oob_token_id: oob_token_id.to_string(),
+                    oob_token_key: oob_token_key.to_string(),
+                })
+            }
             ["openid-finalize", session_id, session_key] => Some(Self::OpenIdFinalize {
                 session_id: session_id.to_string(),
                 session_key: session_key.to_string(),
@@ -113,9 +118,18 @@ impl std::fmt::Display for AuthRoute {
             Self::Signin => "login".to_string(),
             Self::Register => "register".to_string(),
             Self::VerifyEmailWaiting => "verify-email-waiting".to_string(),
-            Self::VerifyEmailConfirm { oob_token_id, oob_token_key} => format!("verify-email-confirm/{oob_token_id}/{oob_token_key}"),
-            Self::PasswordResetConfirm{ oob_token_id, oob_token_key} => format!("reset-password-confirm/{oob_token_id}/{oob_token_key}"),
-            Self::OpenIdFinalize{ session_id, session_key} => format!("openid-finalize/{session_id}/{session_key}"),
+            Self::VerifyEmailConfirm {
+                oob_token_id,
+                oob_token_key,
+            } => format!("verify-email-confirm/{oob_token_id}/{oob_token_key}"),
+            Self::PasswordResetConfirm {
+                oob_token_id,
+                oob_token_key,
+            } => format!("reset-password-confirm/{oob_token_id}/{oob_token_key}"),
+            Self::OpenIdFinalize {
+                session_id,
+                session_key,
+            } => format!("openid-finalize/{session_id}/{session_key}"),
         };
 
         write!(f, "{}", s)
@@ -127,7 +141,7 @@ impl std::fmt::Display for Dashboard {
         let s: String = match self {
             Dashboard::Profile => "profile".to_string(),
         };
-        
+
         write!(f, "{}", s)
     }
 }
@@ -159,13 +173,13 @@ pub enum AuthRoute {
     VerifyEmailWaiting,
     VerifyEmailConfirm {
         oob_token_id: String,
-        oob_token_key: String
+        oob_token_key: String,
     },
     PasswordResetConfirm {
         oob_token_id: String,
-        oob_token_key: String
+        oob_token_key: String,
     },
-    OpenIdFinalize{
+    OpenIdFinalize {
         session_id: String,
         session_key: String,
     },

@@ -22,10 +22,10 @@ pub async fn handle_route(req: HttpRequest, env: Env, cf_ctx: Context) -> ApiRes
                         AuthRoute::Check => AuthCheck::router(ctx).await?,
                         AuthRoute::SigninEmail => AuthSigninEmail::router(ctx).await?,
                         AuthRoute::Signout => AuthSignout::router(ctx).await?,
-                        _ => unimplemented!()
+                        _ => unimplemented!(),
                     },
                     Route::Admin(admin_route) => match admin_route {
-                        AdminRoute::Placeholder => empty_response(None)
+                        AdminRoute::Placeholder => empty_response(None),
                     },
                     Route::Info => ServerInfo::router(ctx).await?,
                 }

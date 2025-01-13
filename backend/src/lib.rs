@@ -16,7 +16,7 @@ use http::{HeaderValue, Method, StatusCode};
 use prelude::*;
 use route::handle_route;
 use shared::{
-    auth::{HEADER_ADMIN_CODE, HEADER_ADMIN_AUTH_UID, HEADER_AUTH_TOKEN_ID, HEADER_AUTH_TOKEN_KEY},
+    auth::{HEADER_ADMIN_AUTH_UID, HEADER_ADMIN_CODE, HEADER_AUTH_TOKEN_ID, HEADER_AUTH_TOKEN_KEY},
     logger::init_logger,
 };
 use worker::{event, Context, Env};

@@ -6,12 +6,13 @@ use shared::{
     backend::{
         result::{ApiError, ApiResult, AuthError},
         route::{Route, RouteAuthKind},
-    }, user::UserId,
+    },
+    user::UserId,
 };
-use worker::{Env, HttpRequest};
+use worker::{console_log, Env, HttpRequest};
 
 use crate::{
-    config::AUTH_TOKEN_SIGNIN_EXPIRES_DURATION, db::user::UserAccountDb, kv::auth::AuthKv
+    config::AUTH_TOKEN_SIGNIN_EXPIRES_DURATION, db::user::UserAccountDb, kv::auth::AuthKv,
 };
 
 #[allow(unused)]
@@ -22,14 +23,8 @@ pub struct User {
     pub roles: Vec<UserRole>,
 }
 
-
-
 impl User {
-    pub async fn try_new(
-        env: &Env,
-        req: &HttpRequest,
-        route: &Route,
-    ) -> ApiResult<Option<Self>> {
+    pub async fn try_new(env: &Env, req: &HttpRequest, route: &Route) -> ApiResult<Option<Self>> {
         // early exit or get the auth token
         let user = match route.auth_kind() {
             RouteAuthKind::None | RouteAuthKind::NoAuthCookieSetter => None,
@@ -47,11 +42,7 @@ impl User {
         Ok(user)
     }
 
-    async fn validate(
-        env: &Env,
-        req: &HttpRequest,
-        auth_kind: RouteAuthKind,
-    ) -> ApiResult<Self> {
+    async fn validate(env: &Env, req: &HttpRequest, auth_kind: RouteAuthKind) -> ApiResult<Self> {
         // first try and get the token from the header, e.g. for non-browser clients who store the token_id securely
         let mut token_id = req
             .headers()
@@ -129,7 +120,6 @@ impl User {
         let account = UserAccountDb::load(env, &uid).await?;
         let roles = UserAccountDb::load_roles(env, &uid).await?;
 
-
         match auth_kind {
             // no need to handle all the variants here, we've early-exited for non-auth routes
             // and anyway we end up with a strict fallback of at least getting a valid token and user id
@@ -150,11 +140,11 @@ impl User {
             }
         }
 
-        Ok(Self{ 
-            id: uid, 
-            token_id, 
-            user_token: account.user_token, 
-            roles 
+        Ok(Self {
+            id: uid,
+            token_id,
+            user_token: account.user_token,
+            roles,
         })
     }
 }

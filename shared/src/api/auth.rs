@@ -60,7 +60,7 @@ pub struct AuthCheckResponse {
 #[repr(u8)]
 pub enum UserRole {
     EmailVerified,
-    Admin
+    Admin,
 }
 
 impl From<u8> for UserRole {

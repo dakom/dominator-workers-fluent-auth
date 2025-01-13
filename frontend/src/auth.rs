@@ -15,13 +15,11 @@ pub static AUTH: LazyLock<Auth> = LazyLock::new(|| {
     let phase = Mutable::new(AuthPhase::Init);
     let loader = Arc::new(AsyncLoader::new());
     let token_key = Arc::new(RwLock::new(None));
-    let uid = Arc::new(RwLock::new(None));
 
     let _auth = Auth {
         phase,
         loader,
         token_key,
-        uid,
     };
 
     // since the AuthPhase starts as Init, the page won't actually show anything useful until this resolves
@@ -36,7 +34,6 @@ pub static AUTH: LazyLock<Auth> = LazyLock::new(|| {
 pub struct Auth {
     pub phase: Mutable<AuthPhase>,
     pub token_key: Arc<RwLock<Option<String>>>,
-    pub uid: Arc<RwLock<Option<UserId>>>,
     loader: Arc<AsyncLoader>,
 }
 
@@ -45,13 +42,12 @@ pub enum AuthPhase {
     Init,
     Authenticated,
     Unauthenticated,
-    EmailNotVerified
+    EmailNotVerified,
 }
 
 impl Auth {
     pub fn clear(&self) {
         *self.token_key.write().unwrap() = None;
-        *self.uid.write().unwrap() = None;
         web_sys::window()
             .unwrap_ext()
             .local_storage()
@@ -68,9 +64,6 @@ impl Auth {
         Ok(())
     }
 
-    pub fn try_clone_uid(&self) -> Option<UserId> {
-        self.uid.read().unwrap().clone()
-    }
     pub fn try_clone_token_key(&self) -> Option<String> {
         self.token_key.read().unwrap().clone()
     }
@@ -84,7 +77,6 @@ impl Auth {
             .set_item(CONFIG.auth_login_key_storage_name, &auth_key)
             .unwrap_ext();
 
-        *self.uid.write().unwrap() = Some(uid);
         *self.token_key.write().unwrap() = Some(auth_key);
 
         self.check().await;
@@ -96,7 +88,7 @@ impl Auth {
         let res = AuthCheck::fetch().await;
         match res {
             Ok(res) => {
-                *self.uid.write().unwrap() = Some(res.uid);
+                tracing::info!("auth check success: {:?}", res);
                 if !res.roles.contains(&UserRole::EmailVerified) {
                     self.phase.set_neq(AuthPhase::EmailNotVerified);
                 } else {

@@ -7,7 +7,8 @@ const MS_PER_HOUR: u64 = 60 * MS_PER_MIN;
 const MS_PER_DAY: u64 = 24 * MS_PER_HOUR;
 const MS_PER_WEEK: u64 = 7 * MS_PER_DAY;
 
-pub static AUTH_TOKEN_SIGNIN_EXPIRES_DURATION:LazyLock<Duration> = LazyLock::new(|| Duration::from_millis(MS_PER_WEEK * 2));
+pub static AUTH_TOKEN_SIGNIN_EXPIRES_DURATION: LazyLock<Duration> =
+    LazyLock::new(|| Duration::from_millis(MS_PER_WEEK * 2));
 
 // the key is never used in isolation, rather it's used in conjunction with the id
 // 16 bytes of randomness is more than enough

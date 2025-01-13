@@ -1,14 +1,21 @@
-use crate::{atoms::{buttons::{Button, ButtonStyle}, text_input::{TextInput, TextInputKind}}, page::landing::auth::actions, prelude::*};
+use crate::{
+    atoms::{
+        buttons::{Button, ButtonStyle},
+        text_input::{TextInput, TextInputKind},
+    },
+    page::landing::auth::actions,
+    prelude::*,
+};
 use shared::{
-    api::auth::OpenIdProvider, auth::FRONTEND_ROUTE_AFTER_LOGIN, backend::result::AuthError
+    api::auth::OpenIdProvider, auth::FRONTEND_ROUTE_AFTER_LOGIN, backend::result::AuthError,
 };
 
 use dominator_helpers::futures::AsyncLoader;
 
 pub(super) struct Signin {
     pub error: ApiErrorDisplay,
-    pub email: Arc<Mutex<Option<String>>>, 
-    pub password: Arc<Mutex<Option<String>>>, 
+    pub email: Arc<Mutex<Option<String>>>,
+    pub password: Arc<Mutex<Option<String>>>,
     pub loader: AsyncLoader,
     notice: Mutable<Option<SigninNotice>>,
 }
@@ -23,14 +30,14 @@ impl Signin {
         Arc::new(Self {
             error: ApiErrorDisplay::new(),
             notice: Mutable::new(None),
-            email: Arc::new(Mutex::new(None)), 
-            password: Arc::new(Mutex::new(None)), 
+            email: Arc::new(Mutex::new(None)),
+            password: Arc::new(Mutex::new(None)),
             loader: AsyncLoader::new(),
         })
     }
     pub fn render(self: Arc<Self>) -> Dom {
         let state = self;
-        static CONTAINER:LazyLock<String> = LazyLock::new(|| {
+        static CONTAINER: LazyLock<String> = LazyLock::new(|| {
             class! {
                 .style("display", "flex")
                 .style("flex-direction", "column")
@@ -39,21 +46,21 @@ impl Signin {
             }
         });
 
-        static AREA_SPLIT:LazyLock<String> = LazyLock::new(|| {
+        static AREA_SPLIT: LazyLock<String> = LazyLock::new(|| {
             class! {
                 .style("display", "flex")
                 .style("flex-direction", "row")
                 .style("gap", "1.875rem")
             }
         });
-        static INPUTS:LazyLock<String> = LazyLock::new(|| {
+        static INPUTS: LazyLock<String> = LazyLock::new(|| {
             class! {
                 .style("display", "flex")
                 .style("flex-direction", "column")
                 .style("align-items", "center")
             }
         });
-        static BUTTONS:LazyLock<String> = LazyLock::new(|| {
+        static BUTTONS: LazyLock<String> = LazyLock::new(|| {
             class! {
                 .style("display", "flex")
                 .style("flex-direction", "column")
@@ -237,7 +244,7 @@ impl Signin {
     }
 
     pub fn render_error(&self) -> Dom {
-        static ERROR_MESSAGE:LazyLock<String> = LazyLock::new(|| {
+        static ERROR_MESSAGE: LazyLock<String> = LazyLock::new(|| {
             class! {
                 .style("color", ColorText::Error.value())
                 .style("margin-bottom", "2rem")

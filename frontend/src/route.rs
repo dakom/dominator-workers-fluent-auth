@@ -91,7 +91,7 @@ pub fn render() -> Dom {
                         return None;
                     }
                 },
-                // User is logged in - but email has not been confirmed. Force them to verify for gated pages 
+                // User is logged in - but email has not been confirmed. Force them to verify for gated pages
                 AuthPhase::EmailNotVerified => {
                     if requires_auth {
                         Route::Landing(Landing::Auth(AuthRoute::VerifyEmailWaiting)).go_to_url();

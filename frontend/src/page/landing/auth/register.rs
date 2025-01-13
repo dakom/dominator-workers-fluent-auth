@@ -1,11 +1,11 @@
-use dominator_helpers::futures::AsyncLoader;
-use shared::api::auth::OpenIdProvider;
-use shared::{auth::FRONTEND_ROUTE_AFTER_LOGIN, backend::result::AuthError};
 use crate::atoms::buttons::{Button, ButtonStyle};
+use crate::atoms::checkbox::Checkbox;
 use crate::atoms::text_input::{TextInput, TextInputKind};
 use crate::page::landing::auth::actions;
 use crate::prelude::*;
-use crate::atoms::checkbox::Checkbox;
+use dominator_helpers::futures::AsyncLoader;
+use shared::api::auth::OpenIdProvider;
+use shared::{auth::FRONTEND_ROUTE_AFTER_LOGIN, backend::result::AuthError};
 
 pub(super) struct Register {
     pub error: ApiErrorDisplay,
@@ -28,7 +28,7 @@ impl Register {
     pub fn render(self: Arc<Self>) -> Dom {
         let state = self;
 
-        static CONTAINER:LazyLock<String> = LazyLock::new(|| {
+        static CONTAINER: LazyLock<String> = LazyLock::new(|| {
             class! {
                 .style("display", "flex")
                 .style("flex-direction", "column")
@@ -37,14 +37,14 @@ impl Register {
             }
         });
 
-        static AREA_SPLIT:LazyLock<String> = LazyLock::new(|| {
+        static AREA_SPLIT: LazyLock<String> = LazyLock::new(|| {
             class! {
                 .style("display", "flex")
                 .style("flex-direction", "row")
                 .style("gap", "1.875rem")
             }
         });
-        static INPUTS:LazyLock<String> = LazyLock::new(|| {
+        static INPUTS: LazyLock<String> = LazyLock::new(|| {
             class! {
                 .style("display", "flex")
                 .style("flex-direction", "column")
@@ -52,7 +52,7 @@ impl Register {
                 .style("gap", "1.875rem")
             }
         });
-        static BUTTONS:LazyLock<String> = LazyLock::new(|| {
+        static BUTTONS: LazyLock<String> = LazyLock::new(|| {
             class! {
                 .style("display", "flex")
                 .style("flex-direction", "column")
@@ -253,7 +253,7 @@ impl Register {
     }
 
     pub fn render_error(&self) -> Dom {
-        static ERROR_MESSAGE:LazyLock<String> = LazyLock::new(|| {
+        static ERROR_MESSAGE: LazyLock<String> = LazyLock::new(|| {
             class! {
                 .style("color", ColorText::Error.value())
                 .style("margin-bottom", "2rem")

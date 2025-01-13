@@ -1,11 +1,17 @@
+use argon2::{
+    password_hash::{PasswordHasher, SaltString},
+    Argon2,
+};
 use base64::Engine;
 use sha2::{Digest, Sha256};
-use shared::{api::auth::{AuthSigninEmail, AuthSigninEmailRequest, AuthSigninResponse, AuthOpenIdConnect, AuthOpenIdConnectRequest, AuthRegisterEmail, AuthRegisterEmailRequest, AuthSendResetPasswordAny, AuthSendResetPasswordMe, AuthSendResetPasswordRequestAny, AuthSendVerifyEmail, OpenIdProvider}, backend::result::{ApiError, ApiResult}};
-use argon2::{
-    password_hash::{
-        PasswordHasher, SaltString
+use shared::{
+    api::auth::{
+        AuthOpenIdConnect, AuthOpenIdConnectRequest, AuthRegisterEmail, AuthRegisterEmailRequest,
+        AuthSendResetPasswordAny, AuthSendResetPasswordMe, AuthSendResetPasswordRequestAny,
+        AuthSendVerifyEmail, AuthSigninEmail, AuthSigninEmailRequest, AuthSigninResponse,
+        OpenIdProvider,
     },
-    Argon2
+    backend::result::{ApiError, ApiResult},
 };
 
 use crate::prelude::*;
@@ -16,25 +22,39 @@ pub async fn send_email_validation() -> ApiResult<()> {
 }
 
 pub(super) async fn register_email(email: &str, password: &str) -> ApiResult<()> {
-    let password = hash_password(email, password).map_err(|err| ApiError::Unknown(err.to_string()))?;
+    let password =
+        hash_password(email, password).map_err(|err| ApiError::Unknown(err.to_string()))?;
 
-    let AuthSigninResponse{auth_key} = AuthRegisterEmail::fetch(AuthRegisterEmailRequest { email: email.to_string(), password }).await?;
+    let AuthSigninResponse { auth_key } = AuthRegisterEmail::fetch(AuthRegisterEmailRequest {
+        email: email.to_string(),
+        password,
+    })
+    .await?;
 
     AUTH.on_signin(auth_key).await
 }
 
 pub(super) async fn login_email(email: &str, password: &str) -> ApiResult<()> {
-    let password = hash_password(email, password).map_err(|err| ApiError::Unknown(err.to_string()))?;
+    let password =
+        hash_password(email, password).map_err(|err| ApiError::Unknown(err.to_string()))?;
 
-    let AuthSigninResponse{auth_key} = AuthSigninEmail::fetch(AuthSigninEmailRequest{ email: email.to_string(), password }).await?;
+    let AuthSigninResponse { auth_key } = AuthSigninEmail::fetch(AuthSigninEmailRequest {
+        email: email.to_string(),
+        password,
+    })
+    .await?;
 
     AUTH.on_signin(auth_key).await
 }
 
 pub(super) async fn openid_connect(provider: OpenIdProvider) -> ApiResult<()> {
-    let res = AuthOpenIdConnect::fetch(AuthOpenIdConnectRequest{provider}).await?;
+    let res = AuthOpenIdConnect::fetch(AuthOpenIdConnectRequest { provider }).await?;
 
-    web_sys::window().unwrap_ext().location().replace(&res.url).unwrap_ext();
+    web_sys::window()
+        .unwrap_ext()
+        .location()
+        .replace(&res.url)
+        .unwrap_ext();
 
     Ok(())
 }
@@ -42,15 +62,14 @@ pub(super) async fn openid_connect(provider: OpenIdProvider) -> ApiResult<()> {
 pub(super) async fn send_password_reset(email: Option<&str>) -> ApiResult<()> {
     match email {
         Some(email) => {
-            AuthSendResetPasswordAny::fetch(AuthSendResetPasswordRequestAny { email: email.to_string() }).await
-        },
-        None => {
-            AuthSendResetPasswordMe::fetch().await
+            AuthSendResetPasswordAny::fetch(AuthSendResetPasswordRequestAny {
+                email: email.to_string(),
+            })
+            .await
         }
+        None => AuthSendResetPasswordMe::fetch().await,
     }
 }
-
-
 
 fn hash_password(email: &str, password: &str) -> Result<String> {
     // salt is composed of email (unique to this record) and global salt
@@ -69,10 +88,11 @@ fn hash_password(email: &str, password: &str) -> Result<String> {
     // it's computed clientside to avoid denial-of-service attacks on the server
     // and there's simply no need for the server to know the real password
     // on the server, it will be hashed again but with a simpler sha256 hash merely to avoid data breaches
-    let hash = Argon2::default().hash_password(password.as_bytes(), &salt).map_err(|err| anyhow!("{:?}", err))?;
+    let hash = Argon2::default()
+        .hash_password(password.as_bytes(), &salt)
+        .map_err(|err| anyhow!("{:?}", err))?;
     let hash = hash.hash.expect("hash should be present");
 
-    // now encode this hash into a string that can be sent over the wire and decoded serverside 
+    // now encode this hash into a string that can be sent over the wire and decoded serverside
     Ok(base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(&hash.as_bytes()))
-
 }
