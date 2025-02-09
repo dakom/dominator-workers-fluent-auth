@@ -10,6 +10,7 @@ mod not_found;
 mod prelude;
 mod route;
 mod utils;
+mod notifications;
 
 use config::ALLOWED_ORIGINS;
 use http::{HeaderValue, Method, StatusCode};

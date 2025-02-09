@@ -59,6 +59,8 @@ pub struct AuthCheckResponse {
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(u8)]
 pub enum UserRole {
+    ZeroIndex,
+    Basic,
     EmailVerified,
     Admin,
 }
@@ -66,8 +68,10 @@ pub enum UserRole {
 impl From<u8> for UserRole {
     fn from(v: u8) -> Self {
         match v {
-            0 => Self::EmailVerified,
-            1 => Self::Admin,
+            0 => Self::ZeroIndex,
+            1 => Self::Basic,
+            2 => Self::EmailVerified,
+            3 => Self::Admin,
             _ => panic!("invalid user role"),
         }
     }

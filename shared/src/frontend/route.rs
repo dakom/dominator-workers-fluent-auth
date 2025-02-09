@@ -91,16 +91,16 @@ impl AuthRoute {
             ["login"] => Some(Self::Signin),
             ["register"] => Some(Self::Register),
             ["verify-email-waiting"] => Some(Self::VerifyEmailWaiting),
-            ["verify-email-confirm", oob_token_id, oob_token_key] => {
+            ["verify-email-confirm", token_id, token_key] => {
                 Some(Self::VerifyEmailConfirm {
-                    oob_token_id: oob_token_id.to_string(),
-                    oob_token_key: oob_token_key.to_string(),
+                    token_id: token_id.to_string(),
+                    token_key: token_key.to_string(),
                 })
             }
-            ["reset-password-confirm", oob_token_id, oob_token_key] => {
+            ["reset-password-confirm", token_id, token_key] => {
                 Some(Self::PasswordResetConfirm {
-                    oob_token_id: oob_token_id.to_string(),
-                    oob_token_key: oob_token_key.to_string(),
+                    token_id: token_id.to_string(),
+                    token_key: token_key.to_string(),
                 })
             }
             ["openid-finalize", session_id, session_key] => Some(Self::OpenIdFinalize {
@@ -119,13 +119,13 @@ impl std::fmt::Display for AuthRoute {
             Self::Register => "register".to_string(),
             Self::VerifyEmailWaiting => "verify-email-waiting".to_string(),
             Self::VerifyEmailConfirm {
-                oob_token_id,
-                oob_token_key,
-            } => format!("verify-email-confirm/{oob_token_id}/{oob_token_key}"),
+                token_id,
+                token_key,
+            } => format!("verify-email-confirm/{token_id}/{token_key}"),
             Self::PasswordResetConfirm {
-                oob_token_id,
-                oob_token_key,
-            } => format!("reset-password-confirm/{oob_token_id}/{oob_token_key}"),
+                token_id,
+                token_key,
+            } => format!("reset-password-confirm/{token_id}/{token_key}"),
             Self::OpenIdFinalize {
                 session_id,
                 session_key,
@@ -172,12 +172,12 @@ pub enum AuthRoute {
     Signin,
     VerifyEmailWaiting,
     VerifyEmailConfirm {
-        oob_token_id: String,
-        oob_token_key: String,
+        token_id: String,
+        token_key: String,
     },
     PasswordResetConfirm {
-        oob_token_id: String,
-        oob_token_key: String,
+        token_id: String,
+        token_key: String,
     },
     OpenIdFinalize {
         session_id: String,

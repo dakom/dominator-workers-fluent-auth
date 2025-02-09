@@ -35,8 +35,12 @@ landing-register-button = Create account
 landing-register-facebook-button = Register with Facebook
 landing-register-google-button = Register with Google
 landing-register-footer = Already have an account?
+landing-verify-email-waiting-header = Check your email to complete verification
+landing-verify-email-resend = Resend verification email 
+landing-verify-email-waiting-sent = Email sent
 
 # landing misc 
 landing-submit = Submit 
 landing-loading = Loading...
 landing-or = or 
+landing-please-wait = Please wait...

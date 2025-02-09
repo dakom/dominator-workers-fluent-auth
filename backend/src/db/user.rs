@@ -70,7 +70,7 @@ impl UserAccountDb {
             for role in roles {
                 statements.push(
                     d1.prepare(format!(
-                        "INSERT INTO {} (id, role) VALUES (?1, ?2)",
+                        "INSERT INTO {} (user_id, role_id) VALUES (?1, ?2)",
                         DB_TABLE.user_roles
                     ))
                     .bind(&[id.into(), u8::from(role).into()])?,
@@ -120,6 +120,18 @@ impl UserAccountDb {
         let res = res.into_iter().map(|r| UserRole::from(r.role_id)).collect();
 
         Ok(res)
+    }
+
+    pub async fn add_role(env: &Env, id: &UserId, role: UserRole) -> ApiResult<()> {
+        get_d1(env)?
+            .prepare(format!(
+                "INSERT INTO {} (user_id, role_id) VALUES (?1, ?2)",
+                DB_TABLE.user_roles
+            ))
+            .bind(&[id.into(), u8::from(role).into()])?
+            .run()
+            .await?
+            .into_result()
     }
 }
 

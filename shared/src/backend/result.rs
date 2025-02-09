@@ -16,7 +16,7 @@ pub enum ApiError {
     #[error("kv error: {0}")]
     Kv(String),
 
-    #[error("kv error: {0}")]
+    #[error("db error: {0}")]
     Db(String),
 
     #[error("missing body {0}")]
@@ -57,4 +57,6 @@ pub enum AuthError {
     EmailAlreadyExists,
     #[error("terms have not been agreed")]
     TermsNotAgreed,
+    #[error("wrong token kind")]
+    WrongTokenKind,
 }

@@ -20,6 +20,7 @@ impl ApiErrorExt for ApiError {
                 AuthError::EmailEmpty => ("error-api-email-empty", None),
                 AuthError::EmailNotVerified => ("error-api-email-not-verified", None),
                 AuthError::EmailAlreadyExists => ("error-api-email-already-exists", None),
+                AuthError::WrongTokenKind => ("error-api-unknown", None),
             },
             Self::MissingBody(_) => ("error-api-missing-body", None),
             Self::ParseBody(_) => ("error-api-parse-body", None),

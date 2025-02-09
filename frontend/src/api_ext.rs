@@ -240,6 +240,7 @@ async fn map_bad_status(res: Response) -> ApiError {
                 | AuthError::EmailEmpty
                 | AuthError::EmailNotVerified
                 | AuthError::EmailAlreadyExists
+                | AuthError::WrongTokenKind
                 | AuthError::TermsNotAgreed => {
                     // do nothing
                 }

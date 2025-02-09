@@ -53,10 +53,11 @@ impl ApiEmpty for AuthSendVerifyEmail {
 
 /// Confirm email validation
 pub struct AuthConfirmVerifyEmail {}
-impl ApiReq for AuthConfirmVerifyEmail {
+impl ApiBoth for AuthConfirmVerifyEmail {
     const ROUTE: Route = Route::Auth(AuthRoute::ConfirmEmailValidation);
 
     type Req = AuthConfirmVerifyEmailRequest;
+    type Res = AuthSigninResponse;
 
     const METHOD: Method = Method::POST;
 }

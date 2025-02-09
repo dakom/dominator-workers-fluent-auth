@@ -1,7 +1,7 @@
 //use super::durable_objects::token::{AuthTokenAfterValidation, AuthTokenDO, AuthTokenKind, AuthTokenValidateResponse};
 
 use shared::{
-    api::auth::{AuthTokenAfterValidation, AuthTokenKind, AuthTokenValidateResponse, UserRole},
+    api::auth::{AuthTokenAfterValidation, AuthTokenData, UserRole},
     auth::{HEADER_AUTH_TOKEN_ID, HEADER_AUTH_TOKEN_KEY},
     backend::{
         result::{ApiError, ApiResult, AuthError},
@@ -9,7 +9,7 @@ use shared::{
     },
     user::UserId,
 };
-use worker::{console_log, Env, HttpRequest};
+use worker::{Env, HttpRequest};
 
 use crate::{
     config::AUTH_TOKEN_SIGNIN_EXPIRES_DURATION, db::user::UserAccountDb, kv::auth::AuthKv,
@@ -108,14 +108,20 @@ impl User {
         }
 
         // validate the token id and key, get the uid and user_token if token is valid
-        let AuthTokenValidateResponse { uid, user_token } = AuthKv::validate(
+        let token_data = AuthKv::validate(
             env,
-            AuthTokenKind::Signin,
             &token_id,
             token_key.to_string(),
             AuthTokenAfterValidation::ExtendExpires(*AUTH_TOKEN_SIGNIN_EXPIRES_DURATION),
         )
         .await?;
+
+        let (uid, user_token) = match token_data {
+            AuthTokenData::Signin { uid, user_token, .. } => (uid, user_token),
+            _ => {
+                return Err(AuthError::WrongTokenKind.into());
+            }
+        };
 
         let account = UserAccountDb::load(env, &uid).await?;
         let roles = UserAccountDb::load_roles(env, &uid).await?;

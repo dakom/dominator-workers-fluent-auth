@@ -6,12 +6,8 @@ use base64::Engine;
 use sha2::{Digest, Sha256};
 use shared::{
     api::auth::{
-        AuthOpenIdConnect, AuthOpenIdConnectRequest, AuthRegisterEmail, AuthRegisterEmailRequest,
-        AuthSendResetPasswordAny, AuthSendResetPasswordMe, AuthSendResetPasswordRequestAny,
-        AuthSendVerifyEmail, AuthSigninEmail, AuthSigninEmailRequest, AuthSigninResponse,
-        OpenIdProvider,
-    },
-    backend::result::{ApiError, ApiResult},
+        AuthConfirmVerifyEmail, AuthConfirmVerifyEmailRequest, AuthOpenIdConnect, AuthOpenIdConnectRequest, AuthRegisterEmail, AuthRegisterEmailRequest, AuthSendResetPasswordAny, AuthSendResetPasswordMe, AuthSendResetPasswordRequestAny, AuthSendVerifyEmail, AuthSigninEmail, AuthSigninEmailRequest, AuthSigninResponse, OpenIdProvider
+    }, auth::FRONTEND_ROUTE_AFTER_LOGIN, backend::result::{ApiError, ApiResult}
 };
 
 use crate::prelude::*;
@@ -45,6 +41,18 @@ pub(super) async fn login_email(email: &str, password: &str) -> ApiResult<()> {
     .await?;
 
     AUTH.on_signin(auth_key).await
+}
+
+pub(super) async fn resend_verification_email() -> ApiResult<()> {
+    AuthSendVerifyEmail::fetch().await
+}
+
+pub(super) async fn verify_email(token_id: String, token_key: String) -> ApiResult<()> {
+    AuthConfirmVerifyEmail::fetch(AuthConfirmVerifyEmailRequest { oob_token_id: token_id, oob_token_key: token_key }).await?;
+
+    AUTH.check().await;
+
+    Ok(())
 }
 
 pub(super) async fn openid_connect(provider: OpenIdProvider) -> ApiResult<()> {

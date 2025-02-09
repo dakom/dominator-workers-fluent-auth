@@ -1,5 +1,6 @@
 use crate::api_ext::*;
 use crate::{auth::User, config::API_ROOT_PATH, not_found::NotFoundHandler, prelude::*};
+use shared::api::auth::{AuthConfirmVerifyEmail, AuthSendVerifyEmail};
 use shared::{
     api::{
         auth::{AuthCheck, AuthRegisterEmail, AuthSigninEmail, AuthSignout},
@@ -22,6 +23,8 @@ pub async fn handle_route(req: HttpRequest, env: Env, cf_ctx: Context) -> ApiRes
                         AuthRoute::Check => AuthCheck::router(ctx).await?,
                         AuthRoute::SigninEmail => AuthSigninEmail::router(ctx).await?,
                         AuthRoute::Signout => AuthSignout::router(ctx).await?,
+                        AuthRoute::SendVerifyEmail => AuthSendVerifyEmail::router(ctx).await?,
+                        AuthRoute::ConfirmEmailValidation => AuthConfirmVerifyEmail::router(ctx).await?,
                         _ => unimplemented!(),
                     },
                     Route::Admin(admin_route) => match admin_route {
@@ -31,8 +34,7 @@ pub async fn handle_route(req: HttpRequest, env: Env, cf_ctx: Context) -> ApiRes
                 }
             }
             None => {
-                let ctx = ApiContext::new(req, env, cf_ctx, None);
-                NotFoundHandler::new(ctx).handle().await?
+                NotFoundHandler::new(ApiContext::new(req, env, cf_ctx, None)).handle().await?
             }
         },
     )

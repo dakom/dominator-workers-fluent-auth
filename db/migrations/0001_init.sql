@@ -21,6 +21,11 @@ CREATE TABLE user_role_info (
     description TEXT
 );
 
+INSERT INTO user_role_info (name, description) VALUES ('zero_index', 'Zero-index placeholder');
+INSERT INTO user_role_info (name, description) VALUES ('basic', 'Basic user');
+INSERT INTO user_role_info (name, description) VALUES ('email_verified', 'Email verified');
+INSERT INTO user_role_info (name, description) VALUES ('admin', 'Administrator');
+
 CREATE TABLE user_roles (
     user_id TEXT NOT NULL,
     role_id INTEGER NOT NULL,

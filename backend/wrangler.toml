@@ -6,14 +6,14 @@ compatibility_date = "2023-12-01"
 build = { command = "worker-build --release" }
 d1_databases = [{ binding = "DB-auth-demo", database_name = "auth-demo", database_id = "3bc8bb8f-87f6-4814-b021-d83c908b0e45", migrations_dir = "../db/migrations" }]
 kv_namespaces = [
-  { binding = "KV-auth-demo-auth-token-login", id = "2d70def966254096bee7d629be6fb766" }
+  { binding = "KV-auth-demo-auth-token", id = "2d70def966254096bee7d629be6fb766" }
 ]
 
 [env.dev]
 build = { command = "worker-build --dev" }
 d1_databases = [{ binding = "DB-auth-demo", database_name = "auth-demo", database_id = "3bc8bb8f-87f6-4814-b021-d83c908b0e45", migrations_dir = "../db/migrations" }]
 kv_namespaces = [
-  { binding = "KV-auth-demo-auth-token-login", id = "2d70def966254096bee7d629be6fb766" }
+  { binding = "KV-auth-demo-auth-token", id = "2d70def966254096bee7d629be6fb766" }
 ]
 
 [[migrations]]
